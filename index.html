@@ -2,13 +2,12 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BPO Recording System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #2b26c1; --bg: #f4f7fe; --blue: #4d44ff; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
+        .sidebar { width: 260px; background: var(--sidebar); color: white; flex-shrink: 0; padding-top: 20px; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; }
         .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid white; }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
@@ -29,11 +28,13 @@
 <body>
     <div class="sidebar">
         <a href="#" class="nav-item active"><i class="fas fa-microphone"></i> Recording BPO PT</a>
+        <a href="#" class="nav-item"><i class="fas fa-wallet"></i> Total VND Request</a>
+        <a href="#" class="nav-item"><i class="fas fa-chart-line"></i> Fill rate</a>
     </div>
     <div class="main">
         <div class="container">
             <div class="card">
-                <div class="card-title">INPUT WFM ID <span id="stt" style="color:#e74c3c; font-size: 12px;">🔴 Connecting...</span></div>
+                <div class="card-title">INPUT WFM ID <span id="stt" style="color:#e74c3c; font-size: 12px;">🔴 Lỗi kết nối!</span></div>
                 <button class="btn-scan"><i class="fas fa-sign-in"></i> SCAN IN</button>
                 <div class="grid-inputs">
                     <div><label>Project Code</label><select id="pj"><option value="VNDB">VNDB</option><option value="VNDL">VNDL</option></select></div>
@@ -41,7 +42,7 @@
                     <div><label>Shift</label><select id="sh"><option value="Day">Day</option><option value="Night">Night</option></select></div>
                 </div>
                 <label>BPO Staff ID (WFM ID)</label>
-                <input type="text" id="wfmInput" placeholder="Dán mã WFM và Enter..." autocomplete="off">
+                <input type="text" id="wfmInput" placeholder="Dán mã và nhấn Enter..." autocomplete="off">
             </div>
             <div class="card">
                 <div class="card-title">BPO PT INFORMATION</div>
@@ -63,23 +64,19 @@
     </div>
 
     <script>
+        // SỬA LINK Ở ĐÂY - Dùng link Query để tránh lỗi CORS
         const SPREADSHEET_ID = '1jE1fj-KGVs0n69XIFVaMGgJeJsssCLWU1awFkCFs35g';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+        
         let db = [];
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         async function init() {
             try {
-                const cacheBuster = new Date().getTime();
-                const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0&t=${cacheBuster}`;
-                
                 const res = await fetch(CSV_URL);
                 const text = await res.text();
-                
-                const rows = text.split(/\r?\n/);
-                db = rows.map(row => {
-                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
-                });
-
+                // Xử lý bỏ dấu ngoặc kép của Google API
+                db = text.split('\n').map(row => row.split(',').map(cell => cell.replace(/"/g, '').trim()));
                 document.getElementById('stt').innerText = "🟢 Data Ready";
                 document.getElementById('stt').style.color = "#10b981";
             } catch (e) {
@@ -89,25 +86,20 @@
 
         document.getElementById('wfmInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                const val = this.value.trim();
-                if (!val) return;
-
-                const f = db.find(row => row.some(cell => cell === val));
+                const id = this.value.trim();
+                // Tìm mã ở bất kỳ cột nào có chứa ID
+                const f = db.find(r => r.includes(id));
 
                 if (f) {
                     audio.play();
-                    document.getElementById('resID').innerText = val;
-                    document.getElementById('resVendor').innerText = f[1] || "-"; // Cột B
+                    document.getElementById('resID').innerText = id;
+                    document.getElementById('resVendor').innerText = f[2] || "-"; // Cột C
                     document.getElementById('resName').innerText = f[3] || "-";   // Cột D
-                    document.getElementById('resUserID').innerText = f[8] || "-"; // Cột I
-                    document.getElementById('resEmail').innerText = f[10] || "-"; // Cột K
-
-                    const log = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${document.getElementById('pj').value}</td><td>${val}</td><td>${f[3] || '-'}</td><td style="color:#10b981;font-weight:bold">Success</td></tr>`;
-                    document.getElementById('logList').insertAdjacentHTML('afterbegin', log);
+                    
+                    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${document.getElementById('pj').value}</td><td>${id}</td><td>${f[2]}</td><td style="color:#10b981;font-weight:bold">Success</td></tr>`;
+                    document.getElementById('logList').insertAdjacentHTML('afterbegin', row);
                     this.value = '';
-                } else {
-                    alert("Không tìm thấy mã: " + val);
-                }
+                } else { alert("Không thấy mã này trong Sheets!"); }
             }
         });
         window.onload = init;
