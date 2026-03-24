@@ -24,7 +24,7 @@
         .info-box { background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; min-height: 20px; font-size: 13px; color: #333; font-weight: 600; }
         input[type="text"], select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; outline: none; box-sizing: border-box; font-size: 14px; }
         input[type="text"]:focus { border-color: var(--blue); }
-        .radio-group { display: flex; gap: 10px; font-size: 12px; align-items: center; font-weight: 600; }
+        .radio-group { display: flex; gap: 15px; font-size: 12px; align-items: center; font-weight: 600; padding: 5px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { text-align: left; padding: 15px; color: #a0aec0; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #4a5568; }
@@ -62,12 +62,12 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 20px; padding: 10px; background: #f8fafc; border-radius: 10px;">
                     <label>Team Selection</label>
                     <div class="radio-group">
                         <label style="margin:0;"><input type="radio" name="team" value="Inbound" checked> Inbound</label>
-                        <label style="margin:0;"><input type="radio" name="team" value="Inventory"> Inventory</label>
-                        <label style="margin:0;"><input type="radio" name="team" value="FD"> FD</label>
+                        <label style="margin:0; margin-left:10px;"><input type="radio" name="team" value="Inventory"> Inventory</label>
+                        <label style="margin:0; margin-left:10px;"><input type="radio" name="team" value="FD"> FD</label>
                     </div>
                 </div>
 
@@ -91,7 +91,7 @@
         </div>
 
         <div class="card" style="padding:0;"><div class="card-title" style="margin:25px 0 0 25px;">DATA ENTRY LOGS</div>
-            <table><thead><tr><th>Scanned At</th><th>Warehouse</th><th>WFM ID</th><th>Full name</th><th>Scan Type</th><th>Status</th></tr></thead>
+            <table><thead><tr><th>Scanned At</th><th>Warehouse</th><th>Team</th><th>WFM ID</th><th>Full name</th><th>Scan Type</th><th>Status</th></tr></thead>
             <tbody id="logList"></tbody></table>
         </div>
     </div>
@@ -101,15 +101,13 @@
         let db = [];
         let scanMode = "IN";
         const audioSuccess = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        const audioError = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
 
         async function init() {
             try {
                 const res = await fetch(`${CSV_URL}&t=${new Date().getTime()}`);
                 const data = await res.text();
                 db = data.split(/\r?\n/).map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
-                document.getElementById('stt').innerText = "🟢 Data Ready";
-            } catch (e) { document.getElementById('stt').innerText = "🔴 Connection Error"; }
+            } catch (e) { console.error("Lỗi data"); }
         }
 
         document.getElementById('btnIn').onclick = function() { this.classList.add('active'); document.getElementById('btnOut').classList.remove('active'); scanMode = "IN"; };
@@ -118,8 +116,7 @@
         function handleConfirm() {
             const val = document.getElementById('wfmInput').value.trim();
             if (!val) return;
-
-            const f = db.find(row => row[8] === val); // Đối chiếu cột I
+            const f = db.find(row => row[8] === val); // Check cột I
 
             if (f) {
                 audioSuccess.play();
@@ -130,13 +127,14 @@
                 document.getElementById('resEmail').innerText  = f[10] || "-";
 
                 const now = new Date();
-                const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')} - ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+                const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
                 const pj = document.querySelector('input[name="pj"]:checked').value;
-                const selectedTeam = document.querySelector('input[name="team"]:checked').value;
+                const team = document.querySelector('input[name="team"]:checked').value;
 
                 const log = `<tr>
                     <td>${timeStr}</td>
                     <td style="color:var(--blue); font-weight:bold;">${pj}</td>
+                    <td>${team}</td>
                     <td>${val}</td>
                     <td>${f[3]}</td>
                     <td><span class="tag-in" style="${scanMode === 'OUT' ? 'background:#fee2e2;color:#ef4444;' : ''}">${scanMode}</span></td>
@@ -144,17 +142,11 @@
                 </tr>`;
                 document.getElementById('logList').insertAdjacentHTML('afterbegin', log);
                 document.getElementById('wfmInput').value = '';
-                document.getElementById('wfmInput').focus();
-            } else {
-                audioError.play();
-                alert("Không tìm thấy Mã WFM: " + val);
-                document.getElementById('wfmInput').value = '';
-            }
+            } else { alert("Không tìm thấy!"); }
         }
 
         document.getElementById('wfmInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleConfirm(); });
         window.onload = init;
-        setInterval(init, 120000);
     </script>
 </body>
 </html>
