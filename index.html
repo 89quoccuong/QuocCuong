@@ -2,19 +2,19 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPO System - Final Combine</title>
+    <title>BPO System - Final Stable</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* GIỮ NGUYÊN STYLE CỦA MÀY */
-        :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --green: #10b981; --orange: #ff5722; --text-gray: #a3abc1; }
+        :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --green: #10b981; --text-gray: #a3abc1; --orange: #ff5722; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
         .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; margin: 5px 15px; border-radius: 12px; cursor: pointer; }
         .nav-item.active { background: var(--primary); color: white; }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
+        
         .main-content { flex: 1; padding: 25px; overflow-y: auto; display: none; }
         .main-content.active { display: block; }
+
         .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); margin-bottom: 25px; position: relative; }
         .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-size: 14px; }
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
@@ -23,6 +23,7 @@
         .info-val { font-size: 14px; font-weight: 800; color: #1b2559; margin-top: 4px; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; text-transform: uppercase; }
         .btn-search { background: var(--orange); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 45px; }
+
         .scan-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f4f7fe; padding: 5px; border-radius: 12px; }
         .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: var(--text-gray); background: transparent; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .tab-btn.active { background: white; color: var(--green); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -33,8 +34,8 @@
 </head>
 <body>
     <div class="sidebar">
-        <div class="nav-item active" id="menu-recording" onclick="switchTab('recording')"><i class="fas fa-microphone"></i> Recording BPO PT</div>
-        <div class="nav-item" id="menu-request" onclick="switchTab('request')"><i class="fas fa-wallet"></i> Total VND Request</div>
+        <div class="nav-item active" id="menu-rec" onclick="switchTab('recording')"><i class="fas fa-microphone"></i> Recording BPO PT</div>
+        <div class="nav-item" id="menu-req" onclick="switchTab('request')"><i class="fas fa-wallet"></i> Total VND Request</div>
     </div>
 
     <div id="recording" class="main-content active">
@@ -69,6 +70,7 @@
                 <div class="info-box"><label>WFM EMAIL</label><div class="info-val" id="res_email">-</div></div>
             </div>
         </div>
+
         <div class="card" style="padding:0;">
             <div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY</div>
             <table>
@@ -92,72 +94,20 @@
                         <option value="VNDL">VNDL</option>
                     </select>
                 </div>
-                <button class="btn-search" onclick="filterRequest()"><i class="fas fa-search"></i> Search</button>
+                <button class="btn-search" onclick="filterRequest()">Search</button>
             </div>
         </div>
         <div class="card" style="padding:0;">
-            <div class="card-title" style="margin:25px 0 0 25px;">TOTAL VND REQUEST</div>
+            <div class="card-title" style="margin:25px 0 15px 25px;">TOTAL REQUEST</div>
             <table>
-                <thead><tr><th>Date</th><th>Station</th><th>Vendor</th><th>Team</th><th>Task</th><th>Bắt đầu</th><th>Kết thúc</th><th>Booking</th></tr></thead>
-                <tbody id="requestTableBody">
-                    <tr><td>17/03/2026</td><td>VNDL</td><td>SKT</td><td>Inbound</td><td>Put</td><td>09:30</td><td>18:30</td><td>1.1</td></tr>
+                <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Task</th><th>Booking</th></tr></thead>
+                <tbody id="reqBody">
+                    <tr><td>17/03/2026</td><td>VNDL</td><td>SKT</td><td>Put</td><td>1.1</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // JS GIỮ NGUYÊN LOGIC CỦA MÀY
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
-        let db = [];
-
-        function switchTab(pageId) {
-            document.querySelectorAll('.main-content').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            document.getElementById('menu-' + pageId).classList.add('active');
-        }
-
-        async function init() {
-            const resp = await fetch(CSV_URL);
-            const text = await resp.text();
-            db = text.split('\n').map(l => {
-                return l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
-            });
-            const sel = document.getElementById('recTime');
-            for(let i=0; i<48; i++) {
-                let h = Math.floor(i/2).toString().padStart(2,'0'), m = (i%2==0?'00':'30');
-                sel.add(new Option(`${h}:${m}`, `${h}:${m}`));
-            }
-        }
-
-        document.getElementById('wfmInput').addEventListener('input', (e) => {
-            const val = e.target.value.trim().toUpperCase();
-            const row = db.find(r => r[2] === val); // Dò theo cột index 2 (WFM ID)
-            if(row) {
-                document.getElementById('res_vendor').innerText = row[1] || '-';
-                document.getElementById('res_name').innerText   = row[4] || '-';
-                document.getElementById('res_id').innerText     = row[2] || '-';
-                document.getElementById('res_user').innerText   = row[3] || '-';
-                document.getElementById('res_email').innerText  = row[7] || '-';
-            } else {
-                ['res_vendor','res_name','res_id','res_user','res_email'].forEach(id => document.getElementById(id).innerText = '-');
-            }
-        });
-
-        function filterRequest() {
-            const dVal = document.getElementById('filterDate').value;
-            const whVal = document.getElementById('filterWH').value;
-            document.querySelectorAll('#requestTableBody tr').forEach(row => {
-                let show = true;
-                let formattedInputDate = dVal ? dVal.split('-').reverse().join('/') : "";
-                if (dVal && row.cells[0].innerText !== formattedInputDate) show = false;
-                if (whVal !== "ALL" && row.cells[1].innerText !== whVal) show = false;
-                row.style.display = show ? "" : "none";
-            });
-        }
-
-        window.onload = init;
-    </script>
-</body>
-</html>
+        // JS PHẦN RECORDING CŨ CỦA MÀY
+        const CSV_URL = '
