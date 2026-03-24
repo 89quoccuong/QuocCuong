@@ -1,56 +1,68 @@
 <script>
         const SPREADSHEET_ID = '1jE1fj-KGVs0n69XIFVaMGgJeJsssCLWU1awFkCFs35g';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
         
         let db = [];
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         async function init() {
             try {
-                // Thêm t=[Số ngẫu nhiên] để ép Google xóa Cache
-                const cacheBuster = new Date().getTime();
-                const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0&t=${cacheBuster}`;
-                
                 const res = await fetch(CSV_URL);
                 const text = await res.text();
-                
-                // Xử lý dữ liệu
-                const rows = text.split(/\r?\n/);
-                db = rows.map(row => {
-                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
-                });
-
-                if(db.length > 0) {
-                    document.getElementById('stt').innerText = "🟢 Data Ready";
-                    document.getElementById('stt').style.color = "#10b981";
-                }
+                // Tách dòng và làm sạch dấu ngoặc kép của Google API
+                db = text.split('\n').map(row => 
+                    row.split(',').map(cell => cell.replace(/^"|"$/g, '').trim())
+                );
+                document.getElementById('stt').innerText = "🟢 Data Ready";
+                document.getElementById('stt').style.color = "#10b981";
             } catch (e) {
-                console.error(e);
                 document.getElementById('stt').innerText = "🔴 Lỗi kết nối!";
             }
         }
 
         document.getElementById('wfmInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                const val = this.value.trim();
-                if (!val) return;
+                const id = this.value.trim();
+                if (!id) return;
 
-                // Dò tìm ID trong data
-                const f = db.find(row => row.some(cell => cell === val));
+                // Tìm dòng chứa mã ID ông quét (Dò trong tất cả các cột để đảm bảo trúng dòng)
+                const f = db.find(row => row.some(cell => cell === id));
 
                 if (f) {
                     audio.play();
-                    // Cập nhật đúng các cột ông cần
-                    document.getElementById('resID').innerText = val;
-                    document.getElementById('resVendor').innerText = f[1] || "-"; // Cột B
-                    document.getElementById('resName').innerText   = f[3] || "-"; // Cột D
-                    document.getElementById('resUserID').innerText = f[8] || "-"; // Cột I
-                    document.getElementById('resEmail').innerText  = f[10] || "-"; // Cột K
+                    
+                    /* MAPPING CỘT CHUẨN:
+                       f[1]  = Cột B (Station -> VENDOR)
+                       f[3]  = Cột D (Team/Fullname -> FULL NAME)
+                       f[8]  = Cột I (Loại CTV -> USER WFM ID)
+                       f[10] = Cột K (Email -> WFM EMAIL)
+                    */
 
-                    const log = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${document.getElementById('pj').value}</td><td>${val}</td><td>${f[3] || '-'}</td><td style="color:#10b981;font-weight:bold">Success</td></tr>`;
+                    const vendorVal  = f[1] || "-";  
+                    const nameVal    = f[3] || "-";  
+                    const userWfmVal = f[8] || "-";  
+                    const emailVal   = f[10] || "-"; 
+
+                    document.getElementById('resID').innerText = id;
+                    document.getElementById('resVendor').innerText = vendorVal;
+                    document.getElementById('resName').innerText = nameVal;
+                    document.getElementById('resUserID').innerText = userWfmVal;
+                    document.getElementById('resEmail').innerText = emailVal;
+
+                    // Ghi log vào bảng bên dưới
+                    const pj = document.getElementById('pj').value;
+                    const log = `<tr>
+                        <td>${new Date().toLocaleTimeString()}</td>
+                        <td>${pj}</td>
+                        <td>${id}</td>
+                        <td>${nameVal}</td>
+                        <td style="color:#10b981;font-weight:bold">Success</td>
+                    </tr>`;
                     document.getElementById('logList').insertAdjacentHTML('afterbegin', log);
-                    this.value = '';
-                } else {
-                    alert("Không tìm thấy mã: " + val);
+                    
+                    this.value = ''; // Reset ô nhập
+                } else { 
+                    alert("Không tìm thấy mã: " + id); 
                 }
             }
         });
