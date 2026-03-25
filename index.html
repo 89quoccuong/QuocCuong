@@ -185,7 +185,7 @@
             // Chặn trùng dựa trên data đã lưu trong máy
             const saved = localStorage.getItem('BPO_PERSISTENT_LOGS');
             if (saved && JSON.parse(saved).data.some(h => h.includes(`<td>${id}</td>`))) {
-                alert("ID này quét rồi mày ơi!"); return;
+                alert("ID này quét rồi !"); return;
             }
 
             document.getElementById('resVendor').innerText = s[1]; 
