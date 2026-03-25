@@ -78,7 +78,18 @@
         </div>
         <div class="card" style="padding:0;"><div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
             <table>
-                <thead><tr><th>Time</th><th>Warehouse</th><th>WFM ID</th><th>Full Name</th><th>Type</th><th>Status</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Warehouse</th>
+                        <th>Team</th>
+                        <th>Vendor</th>
+                        <th>WFM ID</th>
+                        <th>Full Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
                 <tbody id="logList"></tbody>
             </table>
         </div>
@@ -149,26 +160,42 @@
 
         function handleConfirm() {
             const id = document.getElementById('wfmInput').value.trim();
+            // r[8] là WFM ID, r[1] là Vendor, r[3] là Full Name, r[2] là Team (Tao giả định Team nằm ở cột 2 dựa trên cấu trúc thông thường)
             const s = staffDb.find(r => r[8] === id);
             if(s) {
-                document.getElementById('resVendor').innerText = s[1]; document.getElementById('resName').innerText = s[3];
-                document.getElementById('resID').innerText = s[8]; document.getElementById('resUserID').innerText = s[9];
+                document.getElementById('resVendor').innerText = s[1]; 
+                document.getElementById('resName').innerText = s[3];
+                document.getElementById('resID').innerText = s[8]; 
+                document.getElementById('resUserID').innerText = s[9];
                 document.getElementById('resEmail').innerText = s[10];
+                
                 const now = new Date();
-                document.getElementById('logList').insertAdjacentHTML('afterbegin', `<tr><td>${now.toLocaleTimeString()}</td><td>${document.getElementById('recWH').value}</td><td>${id}</td><td>${s[3]}</td><td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td><td style="color:var(--green)">Thành công</td></tr>`);
+                const warehouse = document.getElementById('recWH').value;
+                const vendor = s[1];
+                const team = s[2] || "N/A"; // Lấy Team từ DB staff
+                
+                document.getElementById('logList').insertAdjacentHTML('afterbegin', `
+                    <tr>
+                        <td>${now.toLocaleTimeString()}</td>
+                        <td>${warehouse}</td>
+                        <td>${team}</td>
+                        <td>${vendor}</td>
+                        <td>${id}</td>
+                        <td>${s[3]}</td>
+                        <td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td>
+                        <td style="color:var(--green)">Thành công</td>
+                    </tr>`);
                 document.getElementById('wfmInput').value = '';
             } else alert("Sai WFM ID!");
         }
 
+        // Giữ nguyên hàm searchRequest của mày
         function searchRequest() {
             const dVal = document.getElementById('fDate').value;
             const whVal = document.getElementById('fWH').value;
             const tVal = document.getElementById('fTeam').value;
             if (!dVal) { alert("Chọn Ngày đã mày!"); return; }
-
             const targetDate = dVal.split('-').reverse().join('/');
-            
-            // Logic lọc: Chỉ lấy VNDL/VNDB và khớp ngày, team
             const filtered = commitDb.slice(1).filter(r => {
                 const isCorrectWH = (r[1] === "VNDL" || r[1] === "VNDB");
                 const matchDate = (r[0] === targetDate);
@@ -176,10 +203,8 @@
                 const matchTeam = (tVal === "ALL" || r[3] === tVal);
                 return isCorrectWH && matchDate && matchWH && matchTeam;
             });
-
             const tbody = document.getElementById('reqBody');
             tbody.innerHTML = filtered.length ? '' : '<tr><td colspan="8" style="text-align:center;">Không tìm thấy dữ liệu (Chỉ lấy VNDL/VNDB)</td></tr>';
-            
             filtered.forEach(r => {
                 tbody.innerHTML += `<tr>
                     <td>${r[0] || ''}</td>
