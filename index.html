@@ -21,7 +21,7 @@
         .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-size: 16px; }
         
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; outline: none; font-size: 14px; font-weight: 600; color: #1b2559; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; outline: none; font-size: 14px; font-weight: 600; color: #1b2559; box-sizing: border-box; }
         
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; color: var(--text-gray); font-size: 11px; font-weight: 800; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
@@ -52,10 +52,21 @@
                     <button class="btn-scan active" id="btnIn" onclick="setScan('IN')"><i class="fas fa-sign-in"></i> SCAN IN</button>
                     <button class="btn-scan" id="btnOut" onclick="setScan('OUT')"><i class="fas fa-sign-out-alt"></i> SCAN OUT</button>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom: 20px;">
-                    <div><label>Project Code</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 15px;">
+                    <div><label>Warehouse</label>
                         <select id="recWH"><option value="VNDB">VNDB</option><option value="VNDL">VNDL</option></select>
                     </div>
+                    <div><label>Team</label>
+                        <select id="recTeam">
+                            <option value="Team">Team</option>
+                            <option value="Inventory">Inventory</option>
+                            <option value="Inbound">Inbound</option>
+                            <option value="FD">FD</option>
+                            <option value="OB">OB</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px;">
                     <div><label>Time</label><select id="timeSelect"></select></div>
                     <div><label>Shift</label>
                         <select id="recShift"><option value="Day">Day</option><option value="Night">Night</option></select>
@@ -65,6 +76,7 @@
                 <input type="text" id="wfmInput" placeholder="Input WFM, please..." autocomplete="off">
                 <button class="btn-confirm" onclick="handleConfirm()">CONFIRM</button>
             </div>
+            
             <div class="card">
                 <div class="card-title">BPO PT INFORMATION</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
@@ -76,18 +88,12 @@
                 <div style="margin-top:15px;"><label>WFM EMAIL</label><div class="info-box" id="resEmail">-</div></div>
             </div>
         </div>
+
         <div class="card" style="padding:0;"><div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
             <table>
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Warehouse</th>
-                        <th>Team</th>
-                        <th>Vendor</th>
-                        <th>WFM ID</th>
-                        <th>Full Name</th>
-                        <th>Type</th>
-                        <th>Status</th>
+                        <th>Time</th><th>Warehouse</th><th>Team</th><th>Vendor</th><th>WFM ID</th><th>Full Name</th><th>Type</th><th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="logList"></tbody>
@@ -160,36 +166,37 @@
 
         function handleConfirm() {
             const id = document.getElementById('wfmInput').value.trim();
-            // r[8] là WFM ID, r[1] là Vendor, r[3] là Full Name, r[2] là Team (Tao giả định Team nằm ở cột 2 dựa trên cấu trúc thông thường)
             const s = staffDb.find(r => r[8] === id);
-            if(s) {
-                document.getElementById('resVendor').innerText = s[1]; 
-                document.getElementById('resName').innerText = s[3];
-                document.getElementById('resID').innerText = s[8]; 
-                document.getElementById('resUserID').innerText = s[9];
-                document.getElementById('resEmail').innerText = s[10];
-                
-                const now = new Date();
-                const warehouse = document.getElementById('recWH').value;
-                const vendor = s[1];
-                const team = s[2] || "N/A"; // Lấy Team từ DB staff
-                
-                document.getElementById('logList').insertAdjacentHTML('afterbegin', `
-                    <tr>
-                        <td>${now.toLocaleTimeString()}</td>
-                        <td>${warehouse}</td>
-                        <td>${team}</td>
-                        <td>${vendor}</td>
-                        <td>${id}</td>
-                        <td>${s[3]}</td>
-                        <td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td>
-                        <td style="color:var(--green)">Thành công</td>
-                    </tr>`);
-                document.getElementById('wfmInput').value = '';
-            } else alert("Sai WFM ID!");
+            
+            // CHẶN: Nhập đúng ID mới cho nhảy log
+            if(!s) return;
+
+            // Hiển thị thông tin lên card bên phải
+            document.getElementById('resVendor').innerText = s[1]; 
+            document.getElementById('resName').innerText = s[3];
+            document.getElementById('resID').innerText = s[8]; 
+            document.getElementById('resUserID').innerText = s[9];
+            document.getElementById('resEmail').innerText = s[10];
+            
+            const now = new Date();
+            const warehouse = document.getElementById('recWH').value;
+            const team = document.getElementById('recTeam').value;
+            
+            document.getElementById('logList').insertAdjacentHTML('afterbegin', `
+                <tr>
+                    <td>${now.toLocaleTimeString()}</td>
+                    <td>${warehouse}</td>
+                    <td>${team}</td>
+                    <td>${s[1]}</td>
+                    <td>${id}</td>
+                    <td>${s[3]}</td>
+                    <td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td>
+                    <td style="color:var(--green)">Thành công</td>
+                </tr>`);
+            
+            document.getElementById('wfmInput').value = '';
         }
 
-        // Giữ nguyên hàm searchRequest của mày
         function searchRequest() {
             const dVal = document.getElementById('fDate').value;
             const whVal = document.getElementById('fWH').value;
