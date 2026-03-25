@@ -8,25 +8,19 @@
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --green: #10b981; --orange: #ff5722; --text-gray: #a3abc1; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        
         .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; margin: 5px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(77, 68, 255, 0.3); }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
-
         .main-content { flex: 1; padding: 25px; overflow-y: auto; display: none; }
         .main-content.active { display: block; }
-        
         .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); position: relative; margin-bottom: 25px; }
         .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-size: 16px; }
-        
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; outline: none; font-size: 14px; font-weight: 600; color: #1b2559; }
-        
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; color: var(--text-gray); font-size: 11px; font-weight: 800; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1b2559; font-weight: 600; }
-        
         .btn-search { background: var(--orange); color: white; border: none; padding: 12px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; height: 48px; box-shadow: 0 4px 10px rgba(255, 87, 34, 0.2); transition: 0.2s; }
         .btn-confirm { width: 100%; padding: 15px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .btn-group { display: flex; gap: 15px; margin-bottom: 20px; background: #f4f7fe; padding: 5px; border-radius: 12px; }
@@ -94,21 +88,10 @@
             <div style="display: flex; gap: 20px; align-items: flex-end;">
                 <div style="flex: 1;"><label>Filter by Date</label><input type="date" id="fDate"></div>
                 <div style="flex: 1;"><label>Warehouse</label>
-                    <select id="fWH">
-                        <option value="ALL">VNDB & VNDL (Tất cả)</option>
-                        <option value="VNDB">VNDB</option>
-                        <option value="VNDL">VNDL</option>
-                    </select>
+                    <select id="fWH"><option value="ALL">VNDB & VNDL (Tất cả)</option><option value="VNDB">VNDB</option><option value="VNDL">VNDL</option></select>
                 </div>
                 <div style="flex: 1;"><label>Team</label>
-                    <select id="fTeam">
-                        <option value="ALL">Tất cả Team</option>
-                        <option value="Inbound">Inbound</option>
-                        <option value="Outbound">Outbound</option>
-                        <option value="Inventory">Inventory</option>
-                        <option value="FD">FD</option>
-                        <option value="Return">Return</option>
-                    </select>
+                    <select id="fTeam"><option value="ALL">Tất cả Team</option><option value="Inbound">Inbound</option><option value="Outbound">Outbound</option><option value="Inventory">Inventory</option><option value="FD">FD</option><option value="Return">Return</option></select>
                 </div>
                 <button class="btn-search" onclick="searchRequest()"><i class="fas fa-search"></i> Search</button>
             </div>
@@ -127,10 +110,10 @@
         const STAFF_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         let staffDb = [], commitDb = [], scanMode = "IN";
 
-        // --- PHẦN LƯU TRỮ LOCAL ---
+        // Logic lưu trữ ID để chặn trùng và giữ data khi F5
         function getSavedIDs() {
             const today = new Date().toLocaleDateString();
-            const saved = localStorage.getItem('scanned_ids_store');
+            const saved = localStorage.getItem('bpo_scanned_ids');
             if (saved) {
                 const data = JSON.parse(saved);
                 return data.date === today ? new Set(data.ids) : new Set();
@@ -142,9 +125,8 @@
 
         function syncStorage() {
             const data = { date: new Date().toLocaleDateString(), ids: Array.from(scannedToday) };
-            localStorage.setItem('scanned_ids_store', JSON.stringify(data));
+            localStorage.setItem('bpo_scanned_ids', JSON.stringify(data));
         }
-        // -------------------------
 
         function switchTab(t) {
             document.querySelectorAll('.main-content').forEach(p => p.classList.remove('active'));
@@ -171,16 +153,22 @@
         }
 
         function handleConfirm() {
-            const id = document.getElementById('wfmInput').value.trim();
-            const s = staffDb.find(r => r[8] === id);
+            const val = document.getElementById('wfmInput').value.trim();
             
-            if(!s) return; // Nhập sai ko nhảy
+            // CHẶN 1: Nếu rỗng thì nghỉ khỏe
+            if(!val) return; 
 
-            if(scannedToday.has(id)) {
+            // CHẶN 2: Tìm nhân viên, không thấy thì không làm gì hết (Không nhảy log bậy)
+            const s = staffDb.find(r => r[8] === val);
+            if(!s) return; 
+
+            // CHẶN 3: Đã quét rồi thì báo và chặn tiếp
+            if(scannedToday.has(val)) {
                 alert("ID này quét rồi mày!");
                 return;
             }
 
+            // Mọi thứ OK mới thực hiện các bước dưới
             document.getElementById('resVendor').innerText = s[1]; 
             document.getElementById('resName').innerText = s[3];
             document.getElementById('resID').innerText = s[8]; 
@@ -188,22 +176,20 @@
             document.getElementById('resEmail').innerText = s[10];
             
             const now = new Date();
-            const warehouse = document.getElementById('recWH').value;
-            
             document.getElementById('logList').insertAdjacentHTML('afterbegin', `
                 <tr>
                     <td>${now.toLocaleTimeString()}</td>
-                    <td>${warehouse}</td>
+                    <td>${document.getElementById('recWH').value}</td>
                     <td>${s[2] || 'N/A'}</td>
                     <td>${s[1]}</td>
-                    <td>${id}</td>
+                    <td>${val}</td>
                     <td>${s[3]}</td>
                     <td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td>
                     <td style="color:var(--green)">Thành công</td>
                 </tr>`);
             
-            scannedToday.add(id);
-            syncStorage(); // Lưu lại ko mất khi reset
+            scannedToday.add(val);
+            syncStorage(); // Lưu lại máy
             document.getElementById('wfmInput').value = '';
         }
 
@@ -211,28 +197,15 @@
             const dVal = document.getElementById('fDate').value;
             const whVal = document.getElementById('fWH').value;
             const tVal = document.getElementById('fTeam').value;
-            if (!dVal) { alert("Chọn Ngày đã mày!"); return; }
+            if (!dVal) { alert("Chọn Ngày!"); return; }
             const targetDate = dVal.split('-').reverse().join('/');
             const filtered = commitDb.slice(1).filter(r => {
-                const isCorrectWH = (r[1] === "VNDL" || r[1] === "VNDB");
-                const matchDate = (r[0] === targetDate);
-                const matchWH = (whVal === "ALL" || r[1] === whVal);
-                const matchTeam = (tVal === "ALL" || r[3] === tVal);
-                return isCorrectWH && matchDate && matchWH && matchTeam;
+                return (r[1] === "VNDL" || r[1] === "VNDB") && r[0] === targetDate && (whVal === "ALL" || r[1] === whVal) && (tVal === "ALL" || r[3] === tVal);
             });
             const tbody = document.getElementById('reqBody');
-            tbody.innerHTML = filtered.length ? '' : '<tr><td colspan="8" style="text-align:center;">Không tìm thấy dữ liệu (Chỉ lấy VNDL/VNDB)</td></tr>';
+            tbody.innerHTML = filtered.length ? '' : '<tr><td colspan="8" style="text-align:center;">Không tìm thấy dữ liệu</td></tr>';
             filtered.forEach(r => {
-                tbody.innerHTML += `<tr>
-                    <td>${r[0] || ''}</td>
-                    <td style="color:var(--primary); font-weight:800">${r[1] || ''}</td>
-                    <td>${r[2] || ''}</td>
-                    <td>${r[3] || ''}</td>
-                    <td>${r[4] || ''}</td>
-                    <td>${r[5] || ''}</td>
-                    <td>${r[6] || ''}</td>
-                    <td style="font-weight:800">${r[7] || ''}</td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${r[0]}</td><td style="color:var(--primary); font-weight:800">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td style="font-weight:800">${r[7]}</td></tr>`;
             });
         }
 
