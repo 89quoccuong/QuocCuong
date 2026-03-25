@@ -2,160 +2,100 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System</title>
+    <title>BPO System Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
-        .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); margin: 5px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; font-size: 14px; }
-        .nav-item.active { background: var(--primary); color: white; }
-        .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
-        .main-content { flex: 1; padding: 25px; overflow-y: auto; display: none; }
+        :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); display: flex; height: 100vh; }
+        .sidebar { width: 250px; background: var(--sidebar); color: white; padding: 20px; }
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; display: none; }
         .main-content.active { display: block; }
-        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); margin-bottom: 25px; position: relative; }
-        .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 20px; text-transform: uppercase; font-size: 14px; }
-        label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; }
-        .btn-confirm { width: 100%; padding: 15px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .btn-sync { background: #ff5252; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; position: absolute; bottom: 20px; right: 25px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 15px; color: var(--text-gray); font-size: 11px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1b2559; font-weight: 600; }
-        .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 22px; color: #1b2559; margin-bottom: 10px; }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; font-size: 13px; }
+        .nav-item { padding: 12px; cursor: pointer; border-radius: 8px; margin-bottom: 5px; }
+        .nav-item.active { background: var(--primary); }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="nav-item active" onclick="switchTab('recording', this)"><i class="fas fa-microphone"></i> Recording BPO PT</div>
-        <div class="nav-item" onclick="switchTab('request', this)"><i class="fas fa-wallet"></i> Total VND Request</div>
-        <div class="nav-item" onclick="switchTab('fillrate', this)"><i class="fas fa-chart-line"></i> Fill rate</div>
+        <div class="nav-item active" onclick="tab('recording')">Recording</div>
+        <div class="nav-item" onclick="tab('request')">Total Request</div>
     </div>
 
     <div id="recording" class="main-content active">
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
-            <div class="card">
-                <div class="card-title">INPUT WFM ID</div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div><label>Warehouse</label><select id="wh"><option>VNDB</option><option>VNDL</option></select></div>
-                    <div><label>Team</label><select id="team"><option>Inventory</option><option>Inbound</option><option>FD</option><option>OB</option></select></div>
-                    <div><label>Time</label><select id="time"></select></div>
-                    <div><label>Shift</label><select id="shift"><option>Day</option><option>Night</option></select></div>
-                </div>
-                <label>BPO Staff ID (WFM ID)</label>
-                <input type="text" id="wfmInput" placeholder="Input WFM ID..." onkeypress="if(event.key==='Enter') handleConfirm()">
-                <button class="btn-confirm" onclick="handleConfirm()">CONFIRM</button>
-            </div>
-            <div class="card">
-                <div class="card-title">BPO PT INFORMATION</div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div><label>Vendor</label><div class="info-box" id="resVendor">-</div></div>
-                    <div><label>Full Name</label><div class="info-box" id="resName">-</div></div>
-                    <div><label>WFM ID</label><div class="info-box" id="resID">-</div></div>
-                    <div><label>User WFM ID</label><div class="info-box" id="resUserID">-</div></div>
-                </div>
-                <label>WFM Email</label><div class="info-box" id="resEmail">-</div>
-            </div>
+        <div class="card">
+            <h3>NHẬP DATA</h3>
+            <input type="text" id="wfmId" placeholder="Nhập WFM ID">
+            <button onclick="confirmData()" style="padding:10px; background:var(--primary); color:white; border:none; border-radius:5px; cursor:pointer;">CONFIRM</button>
         </div>
-        <div class="card" style="padding:0; min-height:350px;">
-            <div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
-            <table>
-                <thead><tr><th>Time</th><th>WH</th><th>Team</th><th>Vendor</th><th>WFM ID</th><th>Full Name</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="logList"></tbody>
+        <div class="card">
+            <table id="logTable">
+                <thead><tr><th>Time</th><th>WH</th><th>Team</th><th>ID</th><th>Status</th></tr></thead>
+                <tbody></tbody>
             </table>
-            <button class="btn-sync" onclick="syncToSheet()">SYNC TO SHEET</button>
+            <button onclick="sync()" style="margin-top:10px; background:red; color:white; border:none; padding:10px; cursor:pointer;">SYNC TO SHEET</button>
         </div>
     </div>
 
     <div id="request" class="main-content">
         <div class="card">
-            <div class="card-title">FILTER DATA REQUEST</div>
-            <div style="display: flex; gap: 20px; align-items: flex-end;">
-                <div style="flex:1;"><label>Date</label><input type="date" id="reqDate" value="2026-03-25"></div>
-                <div style="flex:1;"><label>Warehouse</label><select id="reqWH"><option value="All">All</option><option value="VNDB">VNDB</option><option value="VNDL">VNDL</option></select></div>
-                <button class="btn-search" onclick="loadRequestData()">SEARCH</button>
-            </div>
+            <h3>LỌC DỮ LIỆU</h3>
+            <select id="fWh"><option value="All">All WH</option><option value="VNDB">VNDB</option><option value="VNDL">VNDL</option></select>
+            <button onclick="loadData()" style="padding:10px; background:blue; color:white; border:none; cursor:pointer;">SEARCH (BẤM ĐÂY ĐỂ LẤY DATA)</button>
         </div>
-        <div class="card" style="padding:0;">
-            <div class="card-title" style="margin:25px 0 15px 25px;">TOTAL VND REQUEST</div>
+        <div class="card">
             <table>
-                <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>Total Booking</th></tr></thead>
+                <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>Booking</th></tr></thead>
                 <tbody id="reqBody"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // LINK APPS SCRIPT CỦA MÀY
+        // LINK NÀY MÀY ĐÃ TEST RA CHỮ JSON Ở ẢNH image_7bb279
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwp1UEjOuWEaiCrx_BwjGnJRE9cOZLHHD1nBl6ANg4el5cuOHWH-XH-p5uHoBhQ9m4/exec';
         let logs = [];
 
-        function switchTab(t, el) {
+        function tab(id) {
             document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            el.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
-        const tSel = document.getElementById('time');
-        for(let i=0; i<48; i++) {
-            let h = Math.floor(i/2).toString().padStart(2,'0'), m = i%2==0?'00':'30';
-            tSel.add(new Option(`${h}:${m}`, `${h}:${m}`));
-        }
-
-        function handleConfirm() {
-            const id = document.getElementById('wfmInput').value.trim();
+        function confirmData() {
+            const id = document.getElementById('wfmId').value;
             if(!id) return;
-            
-            // Logic cũ: Thêm vào mảng logs
-            const item = { time: tSel.value, wh: document.getElementById('wh').value, team: document.getElementById('team').value, vendor: "Agari", wfmId: id, name: "NHÂN VIÊN TEST", type: "IN", synced: false };
-            logs.unshift(item);
-            
-            // Hiện info box
-            document.getElementById('resVendor').innerText = item.vendor;
-            document.getElementById('resName').innerText = item.name;
-            document.getElementById('resID').innerText = item.wfmId;
-            document.getElementById('resUserID').innerText = "US-" + id;
-            document.getElementById('resEmail').innerText = id + "@shopee.com";
-
-            render();
-            document.getElementById('wfmInput').value = "";
+            logs.push({time: "14:00", wh: "VNDB", team: "Inbound", id: id, status: "Chờ Sync"});
+            const tbody = document.querySelector('#logTable tbody');
+            tbody.innerHTML = logs.map(l => `<tr><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.id}</td><td>${l.status}</td></tr>`).join('');
+            document.getElementById('wfmId').value = "";
         }
 
-        function render() {
-            document.getElementById('logList').innerHTML = logs.map((l, i) => `
-                <tr><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.vendor}</td><td>${l.wfmId}</td><td>${l.name}</td>
-                <td><span style="background:#e6fffa;color:#10b981;padding:4px 8px;border-radius:6px;font-size:11px;">IN</span></td>
-                <td style="color:${l.synced?'#10b981':'orange'}">${l.synced?'Thành công':'Chờ Sync'}</td>
-                <td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="logs.splice(${i},1);render()"></i></td></tr>`).join('');
-        }
-
-        async function syncToSheet() {
-            const pending = logs.filter(l => !l.synced);
-            if(pending.length === 0) return alert("Không có gì để sync");
-            for(let l of pending) {
-                const fd = new URLSearchParams();
-                Object.keys(l).forEach(k => fd.append(k, l[k]));
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd.toString() });
-                l.synced = true;
+        async function sync() {
+            alert("Đang gửi data...");
+            for(let l of logs) {
+                const params = `time=${l.time}&wh=${l.wh}&team=${l.team}&vendor=Agari&wfmId=${l.id}&name=Test&type=IN`;
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: params, headers: {'Content-Type': 'application/x-www-form-urlencoded'} });
+                l.status = "Thành công";
             }
-            render();
-            alert("Đã đồng bộ xong!");
+            confirmData(); // Refresh bảng
         }
 
-        // Lấy data từ link loằng ngoằng đổ vào bảng
-        async function loadRequestData() {
+        // HÀM LẤY DATA TỪ SHEET VỀ WEB
+        async function loadData() {
             const tbody = document.getElementById('reqBody');
-            const whF = document.getElementById('reqWH').value;
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang lấy dữ liệu...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">Đang tải data từ Google Sheets...</td></tr>';
             try {
                 const res = await fetch(SCRIPT_URL);
-                const data = await res.json();
-                const filtered = data.filter(r => (whF === 'All' || r[1] === whF));
+                const data = await res.json(); // Chuyển đống chữ loằng ngoằng thành mảng
+                const wh = document.getElementById('fWh').value;
+                
+                const filtered = data.filter(r => wh === 'All' || r[1] === wh);
                 tbody.innerHTML = filtered.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('');
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;">Lỗi kết nối!</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="color:red">Lỗi: Không lấy được data. Kiểm tra tên sheet "Vendor Commit"!</td></tr>';
             }
         }
     </script>
