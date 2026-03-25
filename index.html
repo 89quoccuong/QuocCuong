@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPO System - Full Original Restore</title>
+    <title>BPO System - Full Original</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --green: #10b981; --red: #ff4d4d; --text-gray: #a3abc1; }
@@ -24,7 +24,7 @@
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; color: var(--text-gray); font-size: 11px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; font-weight: 800; }
         td { padding: 15px; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1b2559; font-weight: 600; }
-        .info-box { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; font-size: 14px; }
+        .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -53,6 +53,8 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     <div><label>Vendor</label><div class="info-box" id="resVendor">-</div></div>
                     <div><label>Full Name</label><div class="info-box" id="resName">-</div></div>
+                    <div><label>WFM ID</label><div class="info-box" id="resID">-</div></div>
+                    <div><label>User WFM ID</label><div class="info-box" id="resUserID">-</div></div>
                 </div>
                 <div style="margin-top:15px;"><label>WFM Email</label><div class="info-box" id="resEmail">-</div></div>
             </div>
@@ -71,9 +73,9 @@
         <div class="card">
             <div class="card-title">FILTER DATA REQUEST</div>
             <div style="display: flex; gap: 20px; align-items: flex-end;">
-                <div style="flex:1;"><label>Date</label><input type="date" value="2026-03-25"></div>
-                <div style="flex:1;"><label>Warehouse</label><select><option>All</option><option>VNDB</option><option>VNDL</option></select></div>
-                <button class="btn-search">SEARCH</button>
+                <div style="flex:1;"><label>Date</label><input type="date" id="reqDate" value="2026-03-25"></div>
+                <div style="flex:1;"><label>Warehouse</label><select id="reqWH"><option>All</option><option>VNDB</option><option>VNDL</option></select></div>
+                <button class="btn-search" onclick="alert('Đang tìm data...')">SEARCH</button>
             </div>
         </div>
         <div class="card" style="padding:0;">
@@ -88,55 +90,5 @@
     <div id="fillrate" class="main-content"><div class="card"><div class="card-title">FILL RATE ANALYTICS</div></div></div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzISVHk7TjYJwNKofly3Lvb5hAH4CaPwoB1gNs8PWr6UsbwRHxol8fUsLt7Vbg3Vk0q/exec';
-        let logs = [];
-
-        function switchTab(t) {
-            document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            if(t==='recording') document.getElementById('m-rec').classList.add('active');
-            else if(t==='request') document.getElementById('m-req').classList.add('active');
-            else document.getElementById('m-fill').classList.add('active');
-        }
-
-        const sel = document.getElementById('timeSel');
-        for(let i=0; i<48; i++) {
-            let h = Math.floor(i/2).toString().padStart(2,'0'), m = i%2==0?'00':'30';
-            sel.add(new Option(`${h}:${m}`, `${h}:${m}`));
-        }
-
-        function handleConfirm() {
-            const id = document.getElementById('wfmInput').value.trim();
-            if(!id) return;
-            const item = { time: document.getElementById('timeSel').value, wh: document.getElementById('recWH').value, team: document.getElementById('recTeam').value, vendor: "Agari", wfmId: id, name: "NHÂN VIÊN TEST", type: "IN", synced: false };
-            logs.unshift(item);
-            render();
-            document.getElementById('wfmInput').value = "";
-        }
-
-        function render() {
-            document.getElementById('logList').innerHTML = logs.map((l, i) => `
-                <tr><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.vendor}</td><td>${l.wfmId}</td><td>${l.name}</td>
-                <td><span style="background:#e6fffa;color:#10b981;padding:4px 8px;border-radius:6px;font-size:11px;">IN</span></td>
-                <td style="color:${l.synced?'#10b981':'orange'}">${l.synced?'Thành công':'Chờ Sync'}</td>
-                <td><i class="fas fa-trash" style="cursor:pointer;color:red" onclick="logs.splice(${i},1);render()"></i></td></tr>`).join('');
-        }
-
-        async function syncToSheet() {
-            const pending = logs.filter(l => !l.synced);
-            if(pending.length === 0) return alert("Không có data mới");
-            for(let l of pending) {
-                const fd = new URLSearchParams();
-                Object.keys(l).forEach(key => fd.append(key, l[key]));
-                try {
-                    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd.toString() });
-                    l.synced = true;
-                } catch (e) { console.error(e); }
-            }
-            render();
-            alert("Đã đồng bộ xong về tab 'DATA PT'!");
-        }
-    </script>
-</body>
-</html>
+        // LINK MỚI NHẤT CỦA MÀY
+        const SCRIPT_URL = '
