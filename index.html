@@ -8,19 +8,26 @@
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --green: #10b981; --orange: #ff5722; --text-gray: #a3abc1; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
+        
         .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; margin: 5px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(77, 68, 255, 0.3); }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
+
         .main-content { flex: 1; padding: 25px; overflow-y: auto; display: none; }
         .main-content.active { display: block; }
+        
         .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); position: relative; margin-bottom: 25px; }
         .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-size: 16px; }
+        
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; outline: none; font-size: 14px; font-weight: 600; color: #1b2559; box-sizing: border-box; }
+        
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; color: var(--text-gray); font-size: 11px; font-weight: 800; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1b2559; font-weight: 600; }
+        
+        .btn-search { background: var(--orange); color: white; border: none; padding: 12px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; height: 48px; box-shadow: 0 4px 10px rgba(255, 87, 34, 0.2); transition: 0.2s; }
         .btn-confirm { width: 100%; padding: 15px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .btn-group { display: flex; gap: 15px; margin-bottom: 20px; background: #f4f7fe; padding: 5px; border-radius: 12px; }
         .btn-scan { flex: 1; padding: 12px; border: none; border-radius: 10px; background: transparent; color: var(--text-gray); font-weight: bold; cursor: pointer; }
@@ -67,7 +74,6 @@
                 <input type="text" id="wfmInput" placeholder="Input WFM, please..." autocomplete="off">
                 <button class="btn-confirm" onclick="handleConfirm()">CONFIRM</button>
             </div>
-            
             <div class="card">
                 <div class="card-title">BPO PT INFORMATION</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
@@ -79,19 +85,11 @@
                 <div style="margin-top:15px;"><label>WFM EMAIL</label><div class="info-box" id="resEmail">-</div></div>
             </div>
         </div>
-
         <div class="card" style="padding:0;"><div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
             <table>
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Warehouse</th>
-                        <th>Team</th>
-                        <th>Vendor</th>
-                        <th>WFM ID</th>
-                        <th>Full Name</th>
-                        <th>Type</th>
-                        <th>Status</th>
+                        <th>Time</th><th>Warehouse</th><th>Team</th><th>Vendor</th><th>WFM ID</th><th>Full Name</th><th>Type</th><th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="logList"></tbody>
@@ -104,7 +102,7 @@
 
     <script>
         const STAFF_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
-        let staffDb = [], scanMode = "IN";
+        let staffDb = [], scanMode = "IN", currentStaff = null;
 
         function switchTab(t) {
             document.querySelectorAll('.main-content').forEach(p => p.classList.remove('active'));
@@ -129,34 +127,42 @@
             }
         }
 
+        document.getElementById('wfmInput').addEventListener('input', (e) => {
+            const id = e.target.value.trim().toUpperCase();
+            currentStaff = staffDb.find(r => r[8] === id);
+            if(currentStaff) {
+                document.getElementById('resVendor').innerText = currentStaff[1]; 
+                document.getElementById('resName').innerText = currentStaff[3];
+                document.getElementById('resID').innerText = currentStaff[8]; 
+                document.getElementById('resUserID').innerText = currentStaff[9];
+                document.getElementById('resEmail').innerText = currentStaff[10];
+            } else {
+                ['resVendor','resName','resID','resUserID','resEmail'].forEach(el => document.getElementById(el).innerText = '-');
+            }
+        });
+
         function handleConfirm() {
-            const id = document.getElementById('wfmInput').value.trim();
-            const s = staffDb.find(r => r[8] === id);
-            if(s) {
-                document.getElementById('resVendor').innerText = s[1]; 
-                document.getElementById('resName').innerText = s[3];
-                document.getElementById('resID').innerText = s[8]; 
-                document.getElementById('resUserID').innerText = s[9];
-                document.getElementById('resEmail').innerText = s[10];
-                
-                const now = new Date();
-                const warehouse = document.getElementById('recWH').value;
-                const team = document.getElementById('recTeam').value;
-                const vendor = s[1];
-                
-                document.getElementById('logList').insertAdjacentHTML('afterbegin', `
-                    <tr>
-                        <td>${now.toLocaleTimeString()}</td>
-                        <td>${warehouse}</td>
-                        <td>${team}</td>
-                        <td>${vendor}</td>
-                        <td>${id}</td>
-                        <td>${s[3]}</td>
-                        <td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td>
-                        <td style="color:var(--green)">Thành công</td>
-                    </tr>`);
-                document.getElementById('wfmInput').value = '';
-            } else alert("Sai WFM ID!");
+            if(!currentStaff) return; // CHẶN Ở ĐÂY: Ko có data hợp lệ thì ko chạy gì hết
+
+            const now = new Date();
+            const warehouse = document.getElementById('recWH').value;
+            const team = document.getElementById('recTeam').value;
+            
+            document.getElementById('logList').insertAdjacentHTML('afterbegin', `
+                <tr>
+                    <td>${now.toLocaleTimeString()}</td>
+                    <td>${warehouse}</td>
+                    <td>${team}</td>
+                    <td>${currentStaff[1]}</td>
+                    <td>${currentStaff[8]}</td>
+                    <td>${currentStaff[3]}</td>
+                    <td><span class="${scanMode==='IN'?'tag-in':'tag-out'}">${scanMode}</span></td>
+                    <td style="color:var(--green)">Thành công</td>
+                </tr>`);
+            
+            document.getElementById('wfmInput').value = '';
+            currentStaff = null;
+            ['resVendor','resName','resID','resUserID','resEmail'].forEach(el => document.getElementById(el).innerText = '-');
         }
 
         window.onload = init;
