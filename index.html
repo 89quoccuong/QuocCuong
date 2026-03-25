@@ -1,17 +1,20 @@
 function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("DATA PT"); // Phải khớp 100% tên tab mày đã tạo
-  
+  var sheet = ss.getSheetByName("DATA PT"); // Phải khớp 100% tên tab
   var p = e.parameter;
-  sheet.appendRow([
-    p.time,
-    p.wh,
-    p.team,
-    p.vendor,
-    p.wfmId,
-    p.name,
-    p.type
-  ]);
   
-  return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+  try {
+    sheet.appendRow([
+      p.time || "",
+      p.wh || "",
+      p.team || "",
+      p.vendor || "",
+      p.wfmId || "",
+      p.name || "",
+      p.type || ""
+    ]);
+    return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error").setMimeType(ContentService.MimeType.TEXT);
+  }
 }
