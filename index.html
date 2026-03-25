@@ -8,26 +8,19 @@
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --green: #10b981; --orange: #ff5722; --text-gray: #a3abc1; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        
         .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; margin: 5px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(77, 68, 255, 0.3); }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
-
         .main-content { flex: 1; padding: 25px; overflow-y: auto; display: none; }
         .main-content.active { display: block; }
-        
         .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); position: relative; margin-bottom: 25px; }
         .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-size: 16px; }
-        
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; outline: none; font-size: 14px; font-weight: 600; color: #1b2559; }
-        
+        input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; outline: none; font-size: 14px; font-weight: 600; color: #1b2559; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; color: var(--text-gray); font-size: 11px; font-weight: 800; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1b2559; font-weight: 600; }
-        
-        .btn-search { background: var(--orange); color: white; border: none; padding: 12px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; height: 48px; box-shadow: 0 4px 10px rgba(255, 87, 34, 0.2); transition: 0.2s; }
         .btn-confirm { width: 100%; padding: 15px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .btn-group { display: flex; gap: 15px; margin-bottom: 20px; background: #f4f7fe; padding: 5px; border-radius: 12px; }
         .btn-scan { flex: 1; padding: 12px; border: none; border-radius: 10px; background: transparent; color: var(--text-gray); font-weight: bold; cursor: pointer; }
@@ -41,7 +34,6 @@
     <div class="sidebar">
         <div class="nav-item active" id="m-recording" onclick="switchTab('recording')"><i class="fas fa-microphone"></i> Recording BPO PT</div>
         <div class="nav-item" id="m-request" onclick="switchTab('request')"><i class="fas fa-wallet"></i> Total VND Request</div>
-        <div class="nav-item"><i class="fas fa-chart-line"></i> Fill rate</div>
     </div>
 
     <div id="recording" class="main-content active">
@@ -52,10 +44,20 @@
                     <button class="btn-scan active" id="btnIn" onclick="setScan('IN')"><i class="fas fa-sign-in"></i> SCAN IN</button>
                     <button class="btn-scan" id="btnOut" onclick="setScan('OUT')"><i class="fas fa-sign-out-alt"></i> SCAN OUT</button>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom: 20px;">
-                    <div><label>Project Code</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 15px;">
+                    <div><label>Warehouse</label>
                         <select id="recWH"><option value="VNDB">VNDB</option><option value="VNDL">VNDL</option></select>
                     </div>
+                    <div><label>Team</label>
+                        <select id="recTeam">
+                            <option value="Inventory">Inventory</option>
+                            <option value="Inbound">Inbound</option>
+                            <option value="FD">FD</option>
+                            <option value="OB">OB</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px;">
                     <div><label>Time</label><select id="timeSelect"></select></div>
                     <div><label>Shift</label>
                         <select id="recShift"><option value="Day">Day</option><option value="Night">Night</option></select>
@@ -65,6 +67,7 @@
                 <input type="text" id="wfmInput" placeholder="Input WFM, please..." autocomplete="off">
                 <button class="btn-confirm" onclick="handleConfirm()">CONFIRM</button>
             </div>
+            
             <div class="card">
                 <div class="card-title">BPO PT INFORMATION</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
@@ -76,6 +79,7 @@
                 <div style="margin-top:15px;"><label>WFM EMAIL</label><div class="info-box" id="resEmail">-</div></div>
             </div>
         </div>
+
         <div class="card" style="padding:0;"><div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
             <table>
                 <thead>
@@ -96,43 +100,11 @@
     </div>
 
     <div id="request" class="main-content">
-        <div class="card">
-            <div class="card-title">FILTER DATA REQUEST</div>
-            <div style="display: flex; gap: 20px; align-items: flex-end;">
-                <div style="flex: 1;"><label>Filter by Date</label><input type="date" id="fDate"></div>
-                <div style="flex: 1;"><label>Warehouse</label>
-                    <select id="fWH">
-                        <option value="ALL">VNDB & VNDL (Tất cả)</option>
-                        <option value="VNDB">VNDB</option>
-                        <option value="VNDL">VNDL</option>
-                    </select>
-                </div>
-                <div style="flex: 1;"><label>Team</label>
-                    <select id="fTeam">
-                        <option value="ALL">Tất cả Team</option>
-                        <option value="Inbound">Inbound</option>
-                        <option value="Outbound">Outbound</option>
-                        <option value="Inventory">Inventory</option>
-                        <option value="FD">FD</option>
-                        <option value="Return">Return</option>
-                    </select>
-                </div>
-                <button class="btn-search" onclick="searchRequest()"><i class="fas fa-search"></i> Search</button>
-            </div>
         </div>
-        <div class="card" style="padding:0;">
-            <div class="card-title" style="margin:25px 0 15px 25px;">TOTAL VND REQUEST</div>
-            <table>
-                <thead><tr><th>Date</th><th>Station</th><th>Vendor</th><th>Team</th><th>Task</th><th>Bắt đầu</th><th>Kết thúc</th><th>Booking</th></tr></thead>
-                <tbody id="reqBody"></tbody>
-            </table>
-        </div>
-    </div>
 
     <script>
-        const COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
         const STAFF_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
-        let staffDb = [], commitDb = [], scanMode = "IN";
+        let staffDb = [], scanMode = "IN";
 
         function switchTab(t) {
             document.querySelectorAll('.main-content').forEach(p => p.classList.remove('active'));
@@ -148,9 +120,8 @@
         }
 
         async function init() {
-            const [r1, r2] = await Promise.all([fetch(STAFF_URL), fetch(COMMIT_URL)]);
-            staffDb = (await r1.text()).split('\n').map(row => row.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-            commitDb = (await r2.text()).split('\n').map(row => row.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+            const resp = await fetch(STAFF_URL);
+            staffDb = (await resp.text()).split('\n').map(row => row.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
             const sel = document.getElementById('timeSelect');
             for(let i=0; i<48; i++) {
                 let h = Math.floor(i/2).toString().padStart(2,'0'), m = (i%2==0?'00':'30');
@@ -160,7 +131,6 @@
 
         function handleConfirm() {
             const id = document.getElementById('wfmInput').value.trim();
-            // r[8] là WFM ID, r[1] là Vendor, r[3] là Full Name, r[2] là Team (Tao giả định Team nằm ở cột 2 dựa trên cấu trúc thông thường)
             const s = staffDb.find(r => r[8] === id);
             if(s) {
                 document.getElementById('resVendor').innerText = s[1]; 
@@ -171,8 +141,8 @@
                 
                 const now = new Date();
                 const warehouse = document.getElementById('recWH').value;
+                const team = document.getElementById('recTeam').value;
                 const vendor = s[1];
-                const team = s[2] || "N/A"; // Lấy Team từ DB staff
                 
                 document.getElementById('logList').insertAdjacentHTML('afterbegin', `
                     <tr>
@@ -187,36 +157,6 @@
                     </tr>`);
                 document.getElementById('wfmInput').value = '';
             } else alert("Sai WFM ID!");
-        }
-
-        // Giữ nguyên hàm searchRequest của mày
-        function searchRequest() {
-            const dVal = document.getElementById('fDate').value;
-            const whVal = document.getElementById('fWH').value;
-            const tVal = document.getElementById('fTeam').value;
-            if (!dVal) { alert("Chọn Ngày đã mày!"); return; }
-            const targetDate = dVal.split('-').reverse().join('/');
-            const filtered = commitDb.slice(1).filter(r => {
-                const isCorrectWH = (r[1] === "VNDL" || r[1] === "VNDB");
-                const matchDate = (r[0] === targetDate);
-                const matchWH = (whVal === "ALL" || r[1] === whVal);
-                const matchTeam = (tVal === "ALL" || r[3] === tVal);
-                return isCorrectWH && matchDate && matchWH && matchTeam;
-            });
-            const tbody = document.getElementById('reqBody');
-            tbody.innerHTML = filtered.length ? '' : '<tr><td colspan="8" style="text-align:center;">Không tìm thấy dữ liệu (Chỉ lấy VNDL/VNDB)</td></tr>';
-            filtered.forEach(r => {
-                tbody.innerHTML += `<tr>
-                    <td>${r[0] || ''}</td>
-                    <td style="color:var(--primary); font-weight:800">${r[1] || ''}</td>
-                    <td>${r[2] || ''}</td>
-                    <td>${r[3] || ''}</td>
-                    <td>${r[4] || ''}</td>
-                    <td>${r[5] || ''}</td>
-                    <td>${r[6] || ''}</td>
-                    <td style="font-weight:800">${r[7] || ''}</td>
-                </tr>`;
-            });
         }
 
         window.onload = init;
