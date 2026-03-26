@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Fixed Columns</title>
+    <title>BPO System - Final Correction</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -51,7 +51,7 @@
                     <div><label>Shift</label><select id="shift"><option>Day</option><option>Night</option></select></div>
                 </div>
                 <label>BPO Staff ID (WFM ID)</label>
-                <input type="text" id="wfmInput" placeholder="Nhập mã ở cột I..." onkeypress="if(event.key==='Enter') handleConfirm()">
+                <input type="text" id="wfmInput" placeholder="Copy mã WFM dán vào..." onkeypress="if(event.key==='Enter') handleConfirm()">
                 <button class="btn-confirm" onclick="handleConfirm()">CONFIRM</button>
             </div>
             <div class="card">
@@ -115,7 +115,7 @@
         <div class="card">
             <div class="card-title">BPO MASTER DATABASE</div>
             <div class="table-wrapper">
-                <table>
+                <table id="fullDbTable">
                     <thead><tr><th>Date</th><th>Vendor</th><th>Name</th><th>WFM ID</th></tr></thead>
                     <tbody id="dbBody"></tbody>
                 </table>
@@ -146,10 +146,11 @@
             try {
                 const res = await fetch(SCRIPT_URL);
                 rawDataCache = await res.json();
-                document.getElementById('dbBody').innerHTML = rawDataCache.slice(0, 30).map(r => 
+                // Hiển thị database tra cứu nhanh
+                document.getElementById('dbBody').innerHTML = rawDataCache.slice(0, 50).map(r => 
                     `<tr><td>${formatVal(r[0])}</td><td>${r[1]}</td><td>${r[3]}</td><td>${r[8]}</td></tr>`
                 ).join('');
-            } catch(e) { console.error("Load fail"); }
+            } catch(e) { console.error("Data load failed"); }
         }
 
         function formatVal(val, isTime = false) {
@@ -164,17 +165,18 @@
             const idInput = document.getElementById('wfmInput').value.trim().toUpperCase();
             if(!idInput) return;
 
-            // DÒ THEO CỘT I (index 8)
+            // FIX CHUẨN CỘT: Dò mã ở cột I (Index 8)
             const found = rawDataCache.find(r => r[8] && String(r[8]).toUpperCase() === idInput);
 
             if(found) {
-                document.getElementById('resVendor').innerText = found[1] || "N/A"; // Cột B
-                document.getElementById('resName').innerText = found[3] || "N/A";   // Cột D
+                document.getElementById('resVendor').innerText = found[1] || "N/A"; // Cột B (Index 1)
+                document.getElementById('resName').innerText = found[3] || "N/A";   // Cột D (Index 3)
                 document.getElementById('resID').innerText = found[8];             // Cột I
                 document.getElementById('resUserID').innerText = found[8];
-                document.getElementById('resEmail').innerText = found[10] || "N/A"; // Cột K
+                document.getElementById('resEmail').innerText = found[10] || "N/A"; // Cột K (Index 10)
             } else {
-                alert("Mã WFM không tồn tại!"); return;
+                alert("Mã WFM [" + idInput + "] không tồn tại trong database!");
+                return;
             }
 
             const item = { 
@@ -199,12 +201,13 @@
 
         async function syncToSheet() {
             const pending = logs.filter(l => !l.synced);
+            if(!pending.length) return alert("Hết data!");
             for(let l of pending) {
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(l) });
                 l.synced = true;
             }
             localStorage.setItem('bpo_logs', JSON.stringify(logs));
-            render(); alert("Xong!");
+            render(); alert("Sync hoàn tất!");
         }
 
         function loadRequestData() {
@@ -229,7 +232,7 @@
                     <td>${formatVal(r[0])}</td><td>${r[1] || ''}</td><td>${r[2] || ''}</td><td>${r[3] || ''}</td>
                     <td>${r[4] || ''}</td><td>${formatVal(r[5], true)}</td><td>${formatVal(r[6], true)}</td>
                     <td>${r[8] || ''}</td><td>${r[9] || ''}</td>
-                </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;">No data</td></tr>';
+                </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;">Không có data cho ngày này</td></tr>';
         }
 
         let expanded = false;
