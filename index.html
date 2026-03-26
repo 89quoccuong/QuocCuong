@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Final Stable</title>
+    <title>BPO System - Stable</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -104,7 +104,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHRfhjkTNk3zP0gsp3hXrOibmvxqy1j0-AFhi-7_0Tq95sTUbBupzQ34a6qw7h7Ws/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVEPyjeLeZ75BDR4P0sNSu7C_t7I-w9m-py4v-NmmwrNEoXBzC3HL33SjJsj0-ubyZ/exec';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
@@ -127,10 +127,12 @@
         }
 
         async function preloadData() {
-            const [resPT, resCommit] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
-            const tPT = await resPT.text(), tCommit = await resCommit.text();
-            dataPT = tPT.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-            dataCommit = tCommit.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+            try {
+                const [resPT, resCommit] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
+                const tPT = await resPT.text(), tCommit = await resCommit.text();
+                dataPT = tPT.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+                dataCommit = tCommit.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+            } catch(e) { console.error("Lỗi tải CSV"); }
         }
 
         function handleConfirm() {
@@ -183,14 +185,28 @@
         async function loadSharedDB() {
             const targetDate = document.getElementById('dbDate').value;
             const body = document.getElementById('masterBody');
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center">Đang tải...</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center">Đang tải dữ liệu...</td></tr>';
             try {
                 const response = await fetch(SCRIPT_URL);
                 const fullData = await response.json();
-                const filtered = fullData.filter(r => r.date === targetDate);
-                body.innerHTML = filtered.length ? filtered.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.name}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center">Không có data</td></tr>';
+                
+                // Chuẩn hóa so sánh ngày để lọc chính xác
+                const filtered = fullData.filter(r => {
+                    const rowDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
+                    return rowDate === targetDate;
+                });
+
+                body.innerHTML = filtered.length ? filtered.map(r => {
+                    // Xử lý chuỗi giờ "rác" từ Google
+                    let displayTime = r.time;
+                    if(displayTime.includes('T')) {
+                        const tPart = displayTime.split('T')[1];
+                        displayTime = tPart.substring(0, 5);
+                    }
+                    return `<tr><td>${r.date}</td><td>${displayTime}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.name}</td></tr>`;
+                }).join('') : '<tr><td colspan="7" style="text-align:center">Không có data cho ngày này</td></tr>';
                 window.cachedDB = filtered;
-            } catch (e) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Lỗi!</td></tr>'; }
+            } catch (e) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Lỗi tải dữ liệu!</td></tr>'; }
         }
 
         function exportMasterCSV() {
@@ -200,7 +216,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `BPO_Data.csv`;
+            link.download = `BPO_Data_${document.getElementById('dbDate').value}.csv`;
             link.click();
         }
 
