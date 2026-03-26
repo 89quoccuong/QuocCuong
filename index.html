@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Final Stable</title>
+    <title>BPO System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -60,7 +60,7 @@
         </div>
         <div class="card" style="padding:0; min-height:350px;">
             <div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
-            <table>
+            <table id="logTable">
                 <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>FULL NAME</th><th>STATUS</th><th>ACTION</th></tr></thead>
                 <tbody id="logList"></tbody>
             </table>
@@ -74,7 +74,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
                 <div><label>Date</label><input type="date" id="reqDate"></div>
                 <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
-                <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Outbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
+                <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Outbound</option></select></div>
                 <button class="btn-search" onclick="loadRequestData()">SEARCH</button>
             </div>
         </div>
@@ -88,7 +88,7 @@
 
     <div id="database" class="main-content">
         <div class="card">
-            <div class="card-title">BPO MASTER DATABASE (ALL USERS)</div>
+            <div class="card-title">BPO MASTER DATABASE</div>
             <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 15px; align-items: flex-end;">
                 <div><label>XEM DỮ LIỆU THEO NGÀY</label><input type="date" id="dbDate"></div>
                 <button class="btn-search" style="background:#10b981" onclick="loadSharedDB()">REFRESH</button>
@@ -142,12 +142,7 @@
                 document.getElementById('resID').innerText = found[8];
                 document.getElementById('resUserID').innerText = found[9];
                 document.getElementById('resEmail').innerText = found[10];
-                
-                logs.unshift({ 
-                    date: document.getElementById('inputDate').value, time: document.getElementById('time').value, 
-                    wh: document.getElementById('wh').value, team: document.getElementById('team').value, 
-                    vendor: found[1], wfmId: found[8], name: found[3], email: found[10], synced: false 
-                });
+                logs.unshift({ date: document.getElementById('inputDate').value, time: document.getElementById('time').value, wh: document.getElementById('wh').value, team: document.getElementById('team').value, vendor: found[1], wfmId: found[8], name: found[3], email: found[10], synced: false });
                 localStorage.setItem('bpo_logs', JSON.stringify(logs));
                 render();
                 document.getElementById('wfmInput').value = "";
@@ -155,10 +150,7 @@
         }
 
         function render() {
-            document.getElementById('logList').innerHTML = logs.map((l, i) => `
-                <tr><td>${l.date}</td><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.vendor}</td><td>${l.wfmId}</td><td>${l.name}</td>
-                <td style="color:${l.synced?'#10b981':'orange'}">${l.synced?'Thành công':'Chờ Sync'}</td>
-                <td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="logs.splice(${i},1);localStorage.setItem('bpo_logs',JSON.stringify(logs));render()"></i></td></tr>`).join('');
+            document.getElementById('logList').innerHTML = logs.map((l, i) => `<tr><td>${l.date}</td><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.vendor}</td><td>${l.wfmId}</td><td>${l.name}</td><td style="color:${l.synced?'#10b981':'orange'}">${l.synced?'Thành công':'Chờ Sync'}</td><td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="logs.splice(${i},1);localStorage.setItem('bpo_logs',JSON.stringify(logs));render()"></i></td></tr>`).join('');
         }
 
         async function syncToSheet() {
@@ -170,11 +162,11 @@
                     for(let key in l) { formData.append(key, l[key]); }
                     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: formData });
                     l.synced = true;
-                } catch (e) { alert("Lỗi Sync!"); break; }
+                } catch (e) { console.error(e); break; }
             }
             localStorage.setItem('bpo_logs', JSON.stringify(logs));
             render();
-            alert("Đã đẩy dữ liệu lên Sheet!");
+            alert("Sync hoàn tất!");
         }
 
         function loadRequestData() {
@@ -184,8 +176,8 @@
             const dateStr = `${d}/${m}/${y}`;
             const whF = document.getElementById('reqWh').value;
             const teamF = document.getElementById('reqTeam').value;
-            const filtered = dataCommit.filter(r => (r[0] && r[0].trim() === dateStr) && (whF === "All" || r[1] === whF) && (teamF === "All" || r[3] === teamF));
-            document.getElementById('reqBody').innerHTML = filtered.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Dữ liệu trống</td></tr>';
+            const filtered = dataCommit.filter(r => (r[0] === dateStr) && (whF === "All" || r[1] === whF) && (teamF === "All" || r[3] === teamF));
+            document.getElementById('reqBody').innerHTML = filtered.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Trống</td></tr>';
         }
 
         async function loadSharedDB() {
@@ -198,7 +190,7 @@
                 const filtered = fullData.filter(r => r.date === targetDate);
                 body.innerHTML = filtered.length ? filtered.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.name}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center">Không có data</td></tr>';
                 window.cachedDB = filtered;
-            } catch (e) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Lỗi tải dữ liệu!</td></tr>'; }
+            } catch (e) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Lỗi!</td></tr>'; }
         }
 
         function exportMasterCSV() {
@@ -208,7 +200,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `BPO_Shared_Data_${document.getElementById('dbDate').value}.csv`;
+            link.download = `BPO_Data.csv`;
             link.click();
         }
 
