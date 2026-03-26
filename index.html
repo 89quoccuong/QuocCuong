@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Full CSV Version</title>
+    <title>BPO System - Final Stable</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -93,11 +93,8 @@
         </div>
     </div>
 
-    <div id="database" class="main-content">
-        <div class="card"><div class="card-title">BPO DATABASE</div><div class="table-wrapper"><table><tbody id="dbBody"></tbody></table></div></div>
-    </div>
-
     <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwp1UEjOuWEaiCrx_BwjGnJRE9cOZLHHD1nBl6ANg4el5cuOHWH-XH-p5uHoBhQ9m4/exec';
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         let rawDataCache = [];
         let logs = JSON.parse(localStorage.getItem('bpo_logs')) || [];
@@ -121,7 +118,6 @@
             try {
                 const res = await fetch(CSV_URL);
                 const text = await res.text();
-                // Tách dòng chuẩn CSV
                 rawDataCache = text.split('\n').map(row => row.split(',').map(cell => cell.replace(/^"|"$/g, '').trim()));
             } catch(e) { console.error("CSV Load Fail"); }
         }
@@ -129,17 +125,15 @@
         function handleConfirm() {
             const idInput = document.getElementById('wfmInput').value.trim().toUpperCase();
             if(!idInput) return;
-
-            // Dò đúng cột I (Index 8) theo ảnh mày gửi
+            // Tra mã WFM cột I (Index 8)
             const found = rawDataCache.find(r => r[8] && r[8].toUpperCase() === idInput);
-
             if(found) {
                 document.getElementById('resVendor').innerText = found[1] || "-";
                 document.getElementById('resName').innerText = found[3] || "-";
                 document.getElementById('resID').innerText = found[8];
                 document.getElementById('resUserID').innerText = found[9] || "-";
                 document.getElementById('resEmail').innerText = found[10] || "-";
-
+                
                 const item = { 
                     date: document.getElementById('inputDate').value, 
                     time: document.getElementById('time').value, 
@@ -161,26 +155,38 @@
                 <td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="logs.splice(${i},1);localStorage.setItem('bpo_logs',JSON.stringify(logs));render()"></i></td></tr>`).join('');
         }
 
+        // TRẢ LẠI LOGIC LỌC OK CHO TAB 2
         function loadRequestData() {
             const dVal = document.getElementById('reqDate').value;
             const whF = document.getElementById('reqWh').value;
             const teamF = document.getElementById('reqTeam').value;
-            
-            // Logic lọc chuẩn theo Ngày, Kho, Team mày đã ok
+            if(!dVal) return;
+
             const filtered = rawDataCache.filter(r => {
-                const matchDate = r[0] && r[0].includes(dVal);
-                const matchWh = whF === "All" || r[1] === whF;
-                const matchTeam = teamF === "All" || r[3] === teamF;
-                return matchDate && matchWh && matchTeam;
+                if(!r[0]) return false;
+                // CSV date (cột 0), Warehouse (cột 1), Team (cột 3)
+                const csvDate = r[0].includes('/') ? r[0].split('/').reverse().join('-') : r[0];
+                return csvDate.includes(dVal) && (whF === "All" || r[1] === whF) && (teamF === "All" || r[3] === teamF);
             });
 
             document.getElementById('reqBody').innerHTML = filtered.map(r => `
                 <tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td>${r[2]||''}</td><td>${r[3]||''}</td><td>${r[4]||''}</td><td>${r[8]||''}</td><td>${r[9]||''}</td></tr>`
-            ).join('');
+            ).join('') || '<tr><td colspan="7" style="text-align:center">Không có dữ liệu</td></tr>';
         }
 
+        // MỞ LẠI HÀM SYNC ĐẨY DATA THẬT
         async function syncToSheet() {
-            alert("Đang giả lập Sync dữ liệu...");
+            const pending = logs.filter(l => !l.synced);
+            if(pending.length === 0) { alert("Không có gì để sync!"); return; }
+            
+            for(let l of pending) {
+                try {
+                    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(l) });
+                    l.synced = true;
+                } catch(e) { console.error(e); }
+            }
+            localStorage.setItem('bpo_logs', JSON.stringify(logs));
+            render(); alert("Đã đẩy dữ liệu thành công!");
         }
 
         function switchTab(t, el) {
