@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Final Pro</title>
+    <title>BPO System - Centralized Data</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -19,7 +19,6 @@
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; }
         .btn-confirm { width: 100%; padding: 15px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
         .btn-search { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .btn-export { background: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .btn-sync { background: #ff5252; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; position: absolute; bottom: 20px; right: 25px; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th { text-align: left; padding: 12px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
@@ -96,17 +95,17 @@
 
     <div id="database" class="main-content">
         <div class="card">
-            <div class="card-title">BPO MASTER DATABASE</div>
+            <div class="card-title">BPO MASTER DATABASE (ALL USERS)</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: flex-end;">
-                <div><label>Chọn Ngày Xem Data</label><input type="date" id="dbDate" onchange="filterMasterDB()"></div>
-                <button class="btn-export" onclick="exportMasterCSV()">TẢI XUỐNG CSV</button>
-                <button class="btn-search" style="background:#10b981" onclick="fetchFullData()">LÀM MỚI (REFRESH)</button>
+                <div><label>Xem dữ liệu theo ngày</label><input type="date" id="dbViewDate" onchange="fetchSharedData()"></div>
+                <button class="btn-search" style="background:#10b981" onclick="fetchSharedData()">LÀM MỚI (REFRESH)</button>
+                <button class="btn-search" onclick="exportMasterCSV()">TẢI XUỐNG CSV</button>
             </div>
         </div>
         <div class="card" style="padding:0;">
             <div class="card-title" style="margin:25px 0 15px 25px;">DỮ LIỆU TỔNG HỢP CÁC MÁY</div>
             <div class="table-wrapper">
-                <table id="masterTable">
+                <table>
                     <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>FULL NAME</th></tr></thead>
                     <tbody id="masterBody"></tbody>
                 </table>
@@ -115,17 +114,18 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwp1UEjOuWEaiCrx_BwjGnJRE9cOZLHHD1nBl6ANg4el5cuOHWH-XH-p5uHoBhQ9m4/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZkaPO8h013kYk1IqoDbg807YEFm18GKbdDh05HI6w5HpyhNBrnTa3g7x7O-TJ-mTT/exec';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
-        let dataPT = [], dataCommit = [], masterDataFromSheet = [], logs = JSON.parse(localStorage.getItem('bpo_logs')) || [];
+        let dataPT = [], dataCommit = [], logs = JSON.parse(localStorage.getItem('bpo_logs')) || [];
 
         window.onload = () => { 
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('inputDate').value = today;
-            document.getElementById('dbDate').value = today;
-            fillTime(); render(); preloadData(); fetchFullData();
+            document.getElementById('reqDate').value = today;
+            document.getElementById('dbViewDate').value = today;
+            fillTime(); render(); preloadData(); 
         };
 
         function fillTime() {
@@ -143,7 +143,6 @@
             dataCommit = tCommit.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
         }
 
-        // --- TASK 1 ---
         function handleConfirm() {
             const idInput = document.getElementById('wfmInput').value.trim().toUpperCase();
             const found = dataPT.find(r => r[8] && r[8].toUpperCase() === idInput);
@@ -174,46 +173,52 @@
                 l.synced = true;
             }
             localStorage.setItem('bpo_logs', JSON.stringify(logs));
-            render(); fetchFullData();
+            render();
+            if(document.getElementById('database').classList.contains('active')) fetchSharedData();
         }
 
-        // --- TASK 2 (GIỮ NGUYÊN) ---
+        // TASK 2: GIỮ NGUYÊN LOGIC LỌC ĐÚNG DD/MM/YYYY
         function loadRequestData() {
             const dVal = document.getElementById('reqDate').value;
             if(!dVal) return;
             const [y, m, d] = dVal.split('-');
             const dateStr = `${d}/${m}/${y}`;
-            const filtered = dataCommit.filter(r => r[0] && r[0].includes(dateStr));
+            const whF = document.getElementById('reqWh').value;
+            const teamF = document.getElementById('reqTeam').value;
+
+            const filtered = dataCommit.filter(r => {
+                const mD = r[0] && r[0].trim() === dateStr;
+                const mW = whF === "All" || (r[1] && r[1].trim() === whF);
+                const mT = teamF === "All" || (r[3] && r[3].trim() === teamF);
+                return mD && mW && mT;
+            });
             document.getElementById('reqBody').innerHTML = filtered.map(r => `
-                <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('');
+                <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Dữ liệu trống</td></tr>';
         }
 
-        // --- TASK 3 (LOGIC MỚI - TẢI DATA) ---
-        async function fetchFullData() {
+        // TASK 3: VÁ LỖI ĐỒNG BỘ DỮ LIỆU CHUNG
+        async function fetchSharedData() {
+            const fDate = document.getElementById('dbViewDate').value;
+            const body = document.getElementById('masterBody');
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center">Đang tải dữ liệu từ Google Sheet...</td></tr>';
             try {
-                // Thêm tham số ?action=read để Script Google biết là đang muốn lấy data về
-                const response = await fetch(SCRIPT_URL + "?action=read");
-                masterDataFromSheet = await response.json();
-                filterMasterDB();
-            } catch (e) { console.log("Database fetch failed"); }
-        }
-
-        function filterMasterDB() {
-            const fDate = document.getElementById('dbDate').value;
-            const filtered = masterDataFromSheet.filter(r => r.date === fDate);
-            document.getElementById('masterBody').innerHTML = filtered.map(r => `
-                <tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.name}</td></tr>`).join('');
+                const response = await fetch(SCRIPT_URL);
+                const allData = await response.json();
+                const filtered = allData.filter(item => item.date === fDate);
+                body.innerHTML = filtered.length ? filtered.map(item => `
+                    <tr><td>${item.date}</td><td>${item.time}</td><td>${item.wh}</td><td>${item.team}</td><td>${item.vendor}</td><td>${item.wfmId}</td><td>${item.name}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center">Không có dữ liệu ngày này</td></tr>';
+                window.lastMaster = filtered;
+            } catch (e) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Lỗi tải Database! Kiểm tra Apps Script.</td></tr>'; }
         }
 
         function exportMasterCSV() {
-            const fDate = document.getElementById('dbDate').value;
-            const data = masterDataFromSheet.filter(r => r.date === fDate);
+            if(!window.lastMaster) return alert("Không có dữ liệu!");
             let csv = "\ufeffDATE,TIME,WH,TEAM,VENDOR,WFM ID,NAME\n";
-            data.forEach(r => csv += `${r.date},${r.time},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.name}\n`);
+            window.lastMaster.forEach(r => csv += `${r.date},${r.time},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.name}\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `BPO_DB_${fDate}.csv`;
+            link.download = `BPO_DB_Shared_${document.getElementById('dbViewDate').value}.csv`;
             link.click();
         }
 
@@ -222,7 +227,7 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(t).classList.add('active');
             el.classList.add('active');
-            if(t === 'database') fetchFullData();
+            if(t === 'database') fetchSharedData();
         }
     </script>
 </body>
