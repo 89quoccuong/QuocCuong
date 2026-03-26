@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Stable</title>
+    <title>BPO System Final</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -27,9 +27,9 @@
 </head>
 <body>
     <div class="sidebar">
-        <div class="nav-item active" onclick="switchTab('recording', this)"><i class="fas fa-microphone"></i> Recording BPO PT</div>
-        <div class="nav-item" onclick="switchTab('request', this)"><i class="fas fa-wallet"></i> Total VND Request</div>
-        <div class="nav-item" onclick="switchTab('database', this)"><i class="fas fa-database"></i> BPO Database</div>
+        <div class="nav-item active" onclick="switchTab('recording', this)"><i class="fas fa-microphone"></i> Recording</div>
+        <div class="nav-item" onclick="switchTab('request', this)"><i class="fas fa-wallet"></i> Request</div>
+        <div class="nav-item" onclick="switchTab('database', this)"><i class="fas fa-database"></i> Database</div>
     </div>
 
     <div id="recording" class="main-content active">
@@ -37,196 +37,48 @@
             <div class="card">
                 <div class="card-title">INPUT WFM ID</div>
                 <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:12px;">
-                    <div style="grid-column: span 2;"><label>DATE SYNC</label><input type="date" id="inputDate"></div>
-                    <div><label>WAREHOUSE</label><select id="wh"><option>VNDB</option><option>VNDL</option></select></div>
+                    <div style="grid-column: span 2;"><label>DATE</label><input type="date" id="inputDate"></div>
+                    <div><label>WH</label><select id="wh"><option>VNDB</option><option>VNDL</option></select></div>
                     <div><label>TEAM</label><select id="team"><option>Inventory</option><option>Inbound</option><option>FD</option><option>OB</option></select></div>
                     <div><label>TIME</label><select id="time"></select></div>
                     <div><label>SHIFT</label><select id="shift"><option>Day</option><option>Night</option></select></div>
                 </div>
-                <label>BPO STAFF ID (WFM ID)</label>
                 <input type="text" id="wfmInput" placeholder="Nhập mã WFM..." onkeypress="if(event.key==='Enter') handleConfirm()">
                 <button class="btn-search" style="width:100%" onclick="handleConfirm()">CONFIRM</button>
             </div>
             <div class="card">
-                <div class="card-title">BPO PT INFORMATION</div>
+                <div class="card-title">INFO</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div><label>VENDOR</label><div class="info-box" id="resVendor">-</div></div>
-                    <div><label>FULL NAME</label><div class="info-box" id="resName">-</div></div>
-                    <div><label>WFM ID</label><div class="info-box" id="resID">-</div></div>
-                    <div><label>USER WFM ID</label><div class="info-box" id="resUserID">-</div></div>
+                    <div><label>NAME</label><div class="info-box" id="resName">-</div></div>
                 </div>
-                <label>WFM EMAIL</label><div class="info-box" id="resEmail">-</div>
+                <label>ID</label><div class="info-box" id="resID">-</div>
             </div>
         </div>
         <div class="card" style="padding:0; min-height:350px;">
-            <div class="card-title" style="margin:25px 0 15px 25px;">DATA ENTRY LOGS</div>
             <table>
-                <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>FULL NAME</th><th>STATUS</th><th>ACTION</th></tr></thead>
+                <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>NAME</th><th>STATUS</th><th>DEL</th></tr></thead>
                 <tbody id="logList"></tbody>
             </table>
             <button class="btn-sync" onclick="syncToSheet()">SYNC TO SHEET</button>
         </div>
     </div>
 
-    <div id="request" class="main-content">
-        <div class="card">
-            <div class="card-title">FILTER DATA REQUEST</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
-                <div><label>Date</label><input type="date" id="reqDate"></div>
-                <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
-                <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Outbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
-                <button class="btn-search" onclick="loadRequestData()">SEARCH</button>
-            </div>
-        </div>
-        <div class="card" style="padding:0;">
-            <table>
-                <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>WFM ID</th><th>User ID</th></tr></thead>
-                <tbody id="reqBody"></tbody>
-            </table>
-        </div>
-    </div>
-
     <div id="database" class="main-content">
         <div class="card">
-            <div class="card-title">BPO MASTER DATABASE</div>
-            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 15px; align-items: flex-end;">
-                <div><label>XEM DỮ LIỆU THEO NGÀY</label><input type="date" id="dbDate"></div>
-                <button class="btn-search" style="background:#10b981" onclick="loadSharedDB()">REFRESH</button>
-                <button class="btn-search" style="background:#4d44ff" onclick="exportMasterCSV()">DOWNLOAD CSV</button>
+            <div class="card-title">MASTER DATABASE</div>
+            <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 15px;">
+                <input type="date" id="dbDate">
+                <button class="btn-search" onclick="loadSharedDB()">REFRESH</button>
             </div>
         </div>
         <div class="card" style="padding:0;">
             <table>
-                <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>FULL NAME</th></tr></thead>
+                <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>NAME</th></tr></thead>
                 <tbody id="masterBody"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVEPyjeLeZ75BDR4P0sNSu7C_t7I-w9m-py4v-NmmwrNEoXBzC3HL33SjJsj0-ubyZ/exec';
-        const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
-        const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
-
-        let dataPT = [], dataCommit = [], logs = JSON.parse(localStorage.getItem('bpo_logs')) || [];
-
-        window.onload = () => { 
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('inputDate').value = today;
-            document.getElementById('reqDate').value = today;
-            document.getElementById('dbDate').value = today;
-            fillTime(); render(); preloadData(); 
-        };
-
-        function fillTime() {
-            const tSel = document.getElementById('time');
-            for(let i=0; i<48; i++) {
-                let h = Math.floor(i/2).toString().padStart(2,'0'), m = i%2==0?'00':'30';
-                tSel.add(new Option(`${h}:${m}`, `${h}:${m}`));
-            }
-        }
-
-        async function preloadData() {
-            try {
-                const [resPT, resCommit] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
-                const tPT = await resPT.text(), tCommit = await resCommit.text();
-                dataPT = tPT.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-                dataCommit = tCommit.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-            } catch(e) { console.error("Lỗi tải CSV"); }
-        }
-
-        function handleConfirm() {
-            const idInput = document.getElementById('wfmInput').value.trim().toUpperCase();
-            const found = dataPT.find(r => r[8] && r[8].toUpperCase() === idInput);
-            if(found) {
-                document.getElementById('resVendor').innerText = found[1];
-                document.getElementById('resName').innerText = found[3];
-                document.getElementById('resID').innerText = found[8];
-                document.getElementById('resUserID').innerText = found[9];
-                document.getElementById('resEmail').innerText = found[10];
-                logs.unshift({ date: document.getElementById('inputDate').value, time: document.getElementById('time').value, wh: document.getElementById('wh').value, team: document.getElementById('team').value, vendor: found[1], wfmId: found[8], name: found[3], email: found[10], synced: false });
-                localStorage.setItem('bpo_logs', JSON.stringify(logs));
-                render();
-                document.getElementById('wfmInput').value = "";
-            }
-        }
-
-        function render() {
-            document.getElementById('logList').innerHTML = logs.map((l, i) => `<tr><td>${l.date}</td><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.vendor}</td><td>${l.wfmId}</td><td>${l.name}</td><td style="color:${l.synced?'#10b981':'orange'}">${l.synced?'Thành công':'Chờ Sync'}</td><td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="logs.splice(${i},1);localStorage.setItem('bpo_logs',JSON.stringify(logs));render()"></i></td></tr>`).join('');
-        }
-
-        async function syncToSheet() {
-            const pending = logs.filter(l => !l.synced);
-            if(pending.length === 0) return alert("Không có gì để sync!");
-            for(let l of pending) {
-                try {
-                    const formData = new URLSearchParams();
-                    for(let key in l) { formData.append(key, l[key]); }
-                    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: formData });
-                    l.synced = true;
-                } catch (e) { break; }
-            }
-            localStorage.setItem('bpo_logs', JSON.stringify(logs));
-            render();
-            alert("Sync hoàn tất!");
-        }
-
-        function loadRequestData() {
-            const dVal = document.getElementById('reqDate').value;
-            if(!dVal) return;
-            const [y, m, d] = dVal.split('-');
-            const dateStr = `${d}/${m}/${y}`;
-            const whF = document.getElementById('reqWh').value;
-            const teamF = document.getElementById('reqTeam').value;
-            const filtered = dataCommit.filter(r => (r[0] === dateStr) && (whF === "All" || r[1] === whF) && (teamF === "All" || r[3] === teamF));
-            document.getElementById('reqBody').innerHTML = filtered.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Trống</td></tr>';
-        }
-
-        async function loadSharedDB() {
-            const targetDate = document.getElementById('dbDate').value;
-            const body = document.getElementById('masterBody');
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center">Đang tải dữ liệu...</td></tr>';
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const fullData = await response.json();
-                
-                // Chuẩn hóa so sánh ngày để lọc chính xác
-                const filtered = fullData.filter(r => {
-                    const rowDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
-                    return rowDate === targetDate;
-                });
-
-                body.innerHTML = filtered.length ? filtered.map(r => {
-                    // Xử lý chuỗi giờ "rác" từ Google
-                    let displayTime = r.time;
-                    if(displayTime.includes('T')) {
-                        const tPart = displayTime.split('T')[1];
-                        displayTime = tPart.substring(0, 5);
-                    }
-                    return `<tr><td>${r.date}</td><td>${displayTime}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.name}</td></tr>`;
-                }).join('') : '<tr><td colspan="7" style="text-align:center">Không có data cho ngày này</td></tr>';
-                window.cachedDB = filtered;
-            } catch (e) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Lỗi tải dữ liệu!</td></tr>'; }
-        }
-
-        function exportMasterCSV() {
-            if(!window.cachedDB) return;
-            let csv = "\ufeffDATE,TIME,WH,TEAM,VENDOR,WFM ID,NAME\n";
-            window.cachedDB.forEach(r => csv += `${r.date},${r.time},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.name}\n`);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `BPO_Data_${document.getElementById('dbDate').value}.csv`;
-            link.click();
-        }
-
-        function switchTab(t, el) {
-            document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            el.classList.add('active');
-            if(t === 'database') loadSharedDB();
-        }
-    </script>
-</body>
-</html>
+        const SCRIPT_URL = '
