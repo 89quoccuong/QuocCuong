@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Fixed Sync</title>
+    <title>BPO System - Final Stable</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -43,6 +43,7 @@
                     <div><label>TIME</label><select id="time"></select></div>
                     <div><label>SHIFT</label><select id="shift"><option>Day</option><option>Night</option></select></div>
                 </div>
+                <label>BPO STAFF ID (WFM ID)</label>
                 <input type="text" id="wfmInput" placeholder="Nhập mã WFM..." onkeypress="if(event.key==='Enter') handleConfirm()">
                 <button class="btn-search" style="width:100%" onclick="handleConfirm()">CONFIRM</button>
             </div>
@@ -54,6 +55,7 @@
                     <div><label>WFM ID</label><div class="info-box" id="resID">-</div></div>
                     <div><label>USER WFM ID</label><div class="info-box" id="resUserID">-</div></div>
                 </div>
+                <label>WFM EMAIL</label><div class="info-box" id="resEmail">-</div>
             </div>
         </div>
         <div class="card" style="padding:0; min-height:350px;">
@@ -72,7 +74,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
                 <div><label>Date</label><input type="date" id="reqDate"></div>
                 <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
-                <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Outbound</option></select></div>
+                <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Outbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
                 <button class="btn-search" onclick="loadRequestData()">SEARCH</button>
             </div>
         </div>
@@ -94,7 +96,6 @@
             </div>
         </div>
         <div class="card" style="padding:0;">
-            <div class="card-title" style="margin:25px 0 15px 25px;">DỮ LIỆU TỔNG HỢP CÁC MÁY</div>
             <table>
                 <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>FULL NAME</th></tr></thead>
                 <tbody id="masterBody"></tbody>
@@ -103,7 +104,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRz2bEUba0KbYER-R7Y1AQq_UOP_RhQM5CQCoxyoB8dGA6P0BNrw0kDScoVd_r3VPi/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsyJbNAZFxvEbtuWHwr6DE402Ju2FReVT4l8c1B0bVDZ63oitpQ_AZazILDnf63str/exec';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
@@ -126,12 +127,10 @@
         }
 
         async function preloadData() {
-            try {
-                const [resPT, resCommit] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
-                const tPT = await resPT.text(), tCommit = await resCommit.text();
-                dataPT = tPT.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-                dataCommit = tCommit.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-            } catch(e) { console.error("Lỗi load CSV PT/Commit"); }
+            const [resPT, resCommit] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
+            const tPT = await resPT.text(), tCommit = await resCommit.text();
+            dataPT = tPT.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+            dataCommit = tCommit.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
         }
 
         function handleConfirm() {
@@ -142,7 +141,13 @@
                 document.getElementById('resName').innerText = found[3];
                 document.getElementById('resID').innerText = found[8];
                 document.getElementById('resUserID').innerText = found[9];
-                logs.unshift({ date: document.getElementById('inputDate').value, time: document.getElementById('time').value, wh: document.getElementById('wh').value, team: document.getElementById('team').value, vendor: found[1], wfmId: found[8], name: found[3], synced: false });
+                document.getElementById('resEmail').innerText = found[10];
+                
+                logs.unshift({ 
+                    date: document.getElementById('inputDate').value, time: document.getElementById('time').value, 
+                    wh: document.getElementById('wh').value, team: document.getElementById('team').value, 
+                    vendor: found[1], wfmId: found[8], name: found[3], email: found[10], synced: false 
+                });
                 localStorage.setItem('bpo_logs', JSON.stringify(logs));
                 render();
                 document.getElementById('wfmInput').value = "";
@@ -156,22 +161,20 @@
                 <td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="logs.splice(${i},1);localStorage.setItem('bpo_logs',JSON.stringify(logs));render()"></i></td></tr>`).join('');
         }
 
-        // VÁ LỖI SYNC: Đẩy lên Sheet thật sự
         async function syncToSheet() {
             const pending = logs.filter(l => !l.synced);
             if(pending.length === 0) return alert("Không có gì để sync!");
             for(let l of pending) {
                 try {
-                    await fetch(SCRIPT_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify(l) 
-                    });
+                    const formData = new URLSearchParams();
+                    for(let key in l) { formData.append(key, l[key]); }
+                    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: formData });
                     l.synced = true;
-                } catch (e) { alert("Lỗi đẩy data!"); break; }
+                } catch (e) { alert("Lỗi Sync!"); break; }
             }
             localStorage.setItem('bpo_logs', JSON.stringify(logs));
             render();
-            alert("Đã đẩy data lên Sheet!");
+            alert("Đã đẩy dữ liệu lên Sheet!");
         }
 
         function loadRequestData() {
@@ -181,11 +184,10 @@
             const dateStr = `${d}/${m}/${y}`;
             const whF = document.getElementById('reqWh').value;
             const teamF = document.getElementById('reqTeam').value;
-            const filtered = dataCommit.filter(r => (r[0] === dateStr) && (whF === "All" || r[1] === whF) && (teamF === "All" || r[3] === teamF));
+            const filtered = dataCommit.filter(r => (r[0] && r[0].trim() === dateStr) && (whF === "All" || r[1] === whF) && (teamF === "All" || r[3] === teamF));
             document.getElementById('reqBody').innerHTML = filtered.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center">Dữ liệu trống</td></tr>';
         }
 
-        // TASK 3: Tải data từ Sheet về
         async function loadSharedDB() {
             const targetDate = document.getElementById('dbDate').value;
             const body = document.getElementById('masterBody');
@@ -206,7 +208,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `BPO_DB_${document.getElementById('dbDate').value}.csv`;
+            link.download = `BPO_Shared_Data_${document.getElementById('dbDate').value}.csv`;
             link.click();
         }
 
