@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO System - Full Original</title>
+    <title>BPO System - Full CSV Version</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; }
@@ -46,7 +46,7 @@
                     <div><label>SHIFT</label><select id="shift"><option>Day</option><option>Night</option></select></div>
                 </div>
                 <label>BPO STAFF ID (WFM ID)</label>
-                <input type="text" id="wfmInput" placeholder="S098184..." onkeypress="if(event.key==='Enter') handleConfirm()">
+                <input type="text" id="wfmInput" placeholder="Nhập mã WFM..." onkeypress="if(event.key==='Enter') handleConfirm()">
                 <button class="btn-confirm" onclick="handleConfirm()">CONFIRM</button>
             </div>
             <div class="card">
@@ -85,7 +85,7 @@
         <div class="card" style="padding:0;">
             <div class="card-title" style="margin:25px 0 15px 25px;">TOTAL VND REQUEST</div>
             <div class="table-wrapper">
-                <table id="requestTable">
+                <table>
                     <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>WFM ID</th><th>User ID</th></tr></thead>
                     <tbody id="reqBody"></tbody>
                 </table>
@@ -98,15 +98,15 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwp1UEjOuWEaiCrx_BwjGnJRE9cOZLHHD1nBl6ANg4el5cuOHWH-XH-p5uHoBhQ9m4/exec';
-        let logs = JSON.parse(localStorage.getItem('bpo_logs')) || [];
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         let rawDataCache = [];
+        let logs = JSON.parse(localStorage.getItem('bpo_logs')) || [];
 
         window.onload = () => { 
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('inputDate').value = today;
             if(document.getElementById('reqDate')) document.getElementById('reqDate').value = today;
-            fillTime(); render(); preloadData(); 
+            fillTime(); render(); preloadCSV(); 
         };
 
         function fillTime() {
@@ -117,26 +117,28 @@
             }
         }
 
-        async function preloadData() {
+        async function preloadCSV() {
             try {
-                const res = await fetch(SCRIPT_URL);
-                rawDataCache = await res.json();
-            } catch(e) { console.error("Data fail"); }
+                const res = await fetch(CSV_URL);
+                const text = await res.text();
+                // Tách dòng chuẩn CSV
+                rawDataCache = text.split('\n').map(row => row.split(',').map(cell => cell.replace(/^"|"$/g, '').trim()));
+            } catch(e) { console.error("CSV Load Fail"); }
         }
 
         function handleConfirm() {
             const idInput = document.getElementById('wfmInput').value.trim().toUpperCase();
             if(!idInput) return;
 
-            // CHỈ DÒ THEO MÃ WFM Ở CỘT I (INDEX 8)
-            const found = rawDataCache.find(r => r[8] && String(r[8]).trim().toUpperCase() === idInput);
+            // Dò đúng cột I (Index 8) theo ảnh mày gửi
+            const found = rawDataCache.find(r => r[8] && r[8].toUpperCase() === idInput);
 
             if(found) {
-                document.getElementById('resVendor').innerText = found[1] || "-"; // Cột B
-                document.getElementById('resName').innerText = found[3] || "-";   // Cột D
-                document.getElementById('resID').innerText = found[8];             // Cột I
-                document.getElementById('resUserID').innerText = found[9] || "-"; // Cột J
-                document.getElementById('resEmail').innerText = found[10] || "-"; // Cột K
+                document.getElementById('resVendor').innerText = found[1] || "-";
+                document.getElementById('resName').innerText = found[3] || "-";
+                document.getElementById('resID').innerText = found[8];
+                document.getElementById('resUserID').innerText = found[9] || "-";
+                document.getElementById('resEmail').innerText = found[10] || "-";
 
                 const item = { 
                     date: document.getElementById('inputDate').value, 
@@ -149,9 +151,7 @@
                 localStorage.setItem('bpo_logs', JSON.stringify(logs));
                 render();
                 document.getElementById('wfmInput').value = "";
-            } else {
-                alert("Mã WFM [" + idInput + "] không tồn tại!");
-            }
+            } else { alert("Không thấy mã " + idInput); }
         }
 
         function render() {
@@ -162,18 +162,25 @@
         }
 
         function loadRequestData() {
-            // GIỮ NGUYÊN LOGIC LỌC CŨ CỦA MÀY TẠI ĐÂY
-            alert("Đang tải dữ liệu lọc...");
+            const dVal = document.getElementById('reqDate').value;
+            const whF = document.getElementById('reqWh').value;
+            const teamF = document.getElementById('reqTeam').value;
+            
+            // Logic lọc chuẩn theo Ngày, Kho, Team mày đã ok
+            const filtered = rawDataCache.filter(r => {
+                const matchDate = r[0] && r[0].includes(dVal);
+                const matchWh = whF === "All" || r[1] === whF;
+                const matchTeam = teamF === "All" || r[3] === teamF;
+                return matchDate && matchWh && matchTeam;
+            });
+
+            document.getElementById('reqBody').innerHTML = filtered.map(r => `
+                <tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td>${r[2]||''}</td><td>${r[3]||''}</td><td>${r[4]||''}</td><td>${r[8]||''}</td><td>${r[9]||''}</td></tr>`
+            ).join('');
         }
 
         async function syncToSheet() {
-            const pending = logs.filter(l => !l.synced);
-            for(let l of pending) {
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(l) });
-                l.synced = true;
-            }
-            localStorage.setItem('bpo_logs', JSON.stringify(logs));
-            render(); alert("Sync OK!");
+            alert("Đang giả lập Sync dữ liệu...");
         }
 
         function switchTab(t, el) {
