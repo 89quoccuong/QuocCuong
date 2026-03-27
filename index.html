@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - NO DATE TASK 1</title>
+    <title>BPO SYSTEM - FIXED FINAL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -20,7 +20,6 @@
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; margin-bottom: 10px; font-size: 13px; }
         .table-container { background: white; border-radius: 20px; padding: 0; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
@@ -47,8 +46,8 @@
                         <div><label>SHIFT</label><select id="shift"><option>Day</option><option>Night</option></select></div>
                     </div>
                     <label>SCAN WFM ID</label>
-                    <input type="text" id="wfmInput" placeholder="Nhập mã rùi Enter..." onkeypress="if(event.key==='Enter') checkInfo()">
-                    <button class="btn-confirm" onclick="handleConfirm()">CONFIRM & SAVE</button>
+                    <input type="text" id="wfmInput" placeholder="Nhập mã rồi Enter..." onkeypress="if(event.key==='Enter') checkInfo()">
+                    <button class="btn-confirm" onclick="handleConfirm()">CONFIRM & LƯU LẠI</button>
                 </div>
                 <div class="card">
                     <div class="card-title">INFO DETAILS</div>
@@ -61,39 +60,35 @@
                     <label>STATUS</label><div class="info-box" id="resStatus" style="color: blue;">READY</div>
                 </div>
             </div>
+            <div class="card">
+                <div class="card-title">DỮ LIỆU ĐÃ NHẬP TRONG NGÀY</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>MÃ WFM</th><th>USER WFM ID</th><th>NAME</th></tr>
+                        </thead>
+                        <tbody id="syncBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div id="request" class="main-content">
-            <div class="card">
-                <div class="card-title">FILTER DATA REQUEST</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
-                    <div><label>Date</label><input type="date" id="reqDate"></div>
-                    <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
-                    <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
-                    <button class="btn-search">SEARCH</button>
-                </div>
-            </div>
-            <div class="card table-container">
-                <table>
-                    <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>Booking</th></tr></thead>
-                    <tbody id="reqBody"></tbody>
-                </table>
-            </div>
+            <div class="card"><div class="card-title">TASK 2 - TOTAL VND REQUEST</div></div>
         </div>
 
         <div id="database" class="main-content">
             <div class="card">
                 <div class="card-title">BPO MASTER DATABASE</div>
-                <div style="display: flex; gap: 15px; align-items: flex-end;">
-                    <div style="width: 200px;"><label>Filter Date</label><input type="date" id="dbDate" onchange="loadSharedDB()"></div>
-                    <button class="btn-search" onclick="loadSharedDB()">REFRESH DB</button>
+                <input type="date" id="dbDate" style="width: 200px;" onchange="loadMasterDB()">
+                <div class="table-container" style="margin-top: 15px;">
+                    <table>
+                        <thead>
+                            <tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>MÃ WFM</th><th>USER WFM ID</th><th>NAME</th></tr>
+                        </thead>
+                        <tbody id="masterBody"></tbody>
+                    </table>
                 </div>
-            </div>
-            <div class="card table-container">
-                <table>
-                    <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>USER ID</th><th>NAME</th></tr></thead>
-                    <tbody id="masterBody"></tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -107,13 +102,10 @@
 
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
-            // Chỉ set date cho Task 2 và Task 3
-            if(document.getElementById('reqDate')) document.getElementById('reqDate').value = today;
-            if(document.getElementById('dbDate')) document.getElementById('dbDate').value = today;
-            
+            document.getElementById('dbDate').value = today;
             fillTime();
             preloadData();
-            loadSharedDB(); // Task 3 tự load data ngày hôm nay
+            loadMasterDB(); 
         };
 
         function fillTime() {
@@ -135,8 +127,7 @@
             if(found) {
                 currentPending = {
                     vendor: found[1], wfmId: found[8], userId: found[9] || "N/A", name: found[3],
-                    wh: document.getElementById('wh').value,
-                    team: document.getElementById('team').value,
+                    wh: document.getElementById('wh').value, team: document.getElementById('team').value,
                     time: document.getElementById('time').value
                 };
                 document.getElementById('resVendor').innerText = currentPending.vendor;
@@ -144,11 +135,11 @@
                 document.getElementById('resID').innerText = currentPending.wfmId;
                 document.getElementById('resUserId').innerText = currentPending.userId;
                 document.getElementById('resStatus').innerText = "✅ OK";
-            } else { alert("ID sai rồi con bò!"); }
+            } else { alert("Không tìm thấy mã này!"); }
         }
 
         async function handleConfirm() {
-            if(!currentPending) return alert("Quét ID trước đã!");
+            if(!currentPending) return alert("Quét mã trước!");
             const realDate = new Date().toISOString().split('T')[0]; 
             const dataToSave = { ...currentPending, date: realDate };
             document.getElementById('resStatus').innerText = "SAVING...";
@@ -157,25 +148,30 @@
             document.getElementById('wfmInput').value = "";
             currentPending = null;
             document.getElementById('resStatus').innerText = "READY";
-            loadSharedDB(); // Update Task 3 luôn
+            loadMasterDB();
         }
 
-        async function loadSharedDB() {
+        async function loadMasterDB() {
             const filterDate = document.getElementById('dbDate').value;
-            const tbody = document.getElementById('masterBody');
-            tbody.innerHTML = "<tr><td colspan='8'>Đang kéo data...</td></tr>";
+            const today = new Date().toISOString().split('T')[0];
             try {
                 const res = await fetch(SCRIPT_URL);
                 const allData = await res.json();
-                const filtered = allData.filter(r => r.date === filterDate);
-                if(filtered.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='8'>Ngày này chưa có ai làm hết!</td></tr>";
-                } else {
-                    tbody.innerHTML = filtered.map(r => `
-                        <tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>
-                    `).join('');
-                }
-            } catch(e) { tbody.innerHTML = "<tr><td colspan='8'>Lỗi database!</td></tr>"; }
+                
+                // Cập nhật Task 3
+                const mFiltered = allData.filter(r => r.date === filterDate);
+                renderTable('masterBody', mFiltered);
+                
+                // Cập nhật Task 1 (Luôn lấy ngày hôm nay)
+                const sFiltered = allData.filter(r => r.date === today);
+                renderTable('syncBody', sFiltered);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderTable(id, data) {
+            const tbody = document.getElementById(id);
+            tbody.innerHTML = data.length === 0 ? "<tr><td colspan='8'>No data</td></tr>" : 
+                data.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`).reverse().join('');
         }
 
         function switchTab(t, el) {
