@@ -52,10 +52,10 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div><label>VENDOR</label><div class="info-box" id="resVendor">-</div></div>
                     <div><label>NAME</label><div class="info-box" id="resName">-</div></div>
+                    <div><label>ID</label><div class="info-box" id="resID">-</div></div>
+                    <div><label>EMAIL</label><div class="info-box" id="resEmail">-</div></div>
                 </div>
-                <label>ID</label><div class="info-box" id="resID" style="width:50%">-</div>
-                <label>EMAIL</label><div class="info-box" id="resEmail">-</div>
-                <label>STATUS UPDATE</label><div class="info-box" id="resStatus">READY</div>
+                <label>STATUS</label><div class="info-box" id="resStatus">READY</div>
             </div>
         </div>
         <div class="card" style="padding:0; min-height:350px;">
@@ -104,7 +104,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6zQEoUXZ0noWkXNXy-QfdPue2E8o2Idqv7TBUXwEqu3y3avUx-JBB9VqNgnsMUruX/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUnhGNN8x7jxIqrxoo8Bjw9rvievE0olThhXaAw3GvUeoRJWQacA4MGAsmus785lKQ/exec';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
@@ -176,7 +176,7 @@
             document.getElementById('logList').innerHTML = filtered.map(l => `
                 <tr>
                     <td>${l.date}</td><td>${l.time}</td><td>${l.wh}</td><td>${l.team}</td><td>${l.vendor}</td><td>${l.wfmId}</td><td>${l.name}</td>
-                    <td style="text-align:center"><button class="btn-del"><i class="fas fa-trash-can"></i></button></td>
+                    <td style="text-align:center"><button class="btn-del"><i class="fas fa-trash-can" style="color:#ff5252"></i></button></td>
                     <td style="color:green">OK</td>
                 </tr>`).join('');
         }
