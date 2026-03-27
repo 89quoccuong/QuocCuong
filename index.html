@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - MULTI SELECT TEAM</title>
+    <title>BPO SYSTEM - DATE RANGE FIXED</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -25,8 +25,6 @@
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th { text-align: left; padding: 15px 12px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid #f8fafc; font-size: 12px; color: #1b2559; font-weight: 600; }
-        
-        /* Style riêng cho ô chọn Team nhiều ô tích */
         .multi-team-box { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; border: 1px solid #e0e5f2; padding: 10px; border-radius: 12px; }
         .team-option { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1b2559; cursor: pointer; }
         .team-option input { width: auto; margin: 0; cursor: pointer; }
@@ -110,8 +108,9 @@
         <div id="database" class="main-content">
             <div class="card">
                 <div class="card-title">BPO MASTER DATABASE</div>
-                <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
-                    <div><label>Chọn Ngày</label><input type="date" id="dbDate" style="width: 200px;" onchange="filterLocalDB()"></div>
+                <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap;">
+                    <div><label>Từ Ngày</label><input type="date" id="dbDateFrom" style="width: 160px;" onchange="filterLocalDB()"></div>
+                    <div><label>Đến Ngày</label><input type="date" id="dbDateTo" style="width: 160px;" onchange="filterLocalDB()"></div>
                     <button onclick="resetDB()" style="background: #e0e5f2; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; color: #1b2559;">RESET</button>
                     <button onclick="downloadCSV()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer;">DOWNLOAD DATA</button>
                 </div>
@@ -131,7 +130,8 @@
 
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dbDate').value = today;
+            document.getElementById('dbDateFrom').value = today;
+            document.getElementById('dbDateTo').value = today;
             document.getElementById('reqDate').value = today;
             fillTime(); preloadData(); loadMasterDB();
         };
@@ -172,17 +172,12 @@
             document.getElementById('resStatus').innerText = "READY"; loadMasterDB();
         }
 
-        // --- TASK 2 (SỬA LẠI LOGIC CHỌN NHIỀU TEAM) ---
         function searchRequest() {
             const fDate = document.getElementById('reqDate').value;
             const fWh = document.getElementById('reqWh').value;
-            
-            // Lấy danh sách các team được tích
             const selectedTeams = Array.from(document.querySelectorAll('#reqTeamGroup input:checked')).map(cb => cb.value);
-            
             const tbody = document.getElementById('reqBody');
             tbody.innerHTML = "<tr><td colspan='9' style='text-align:center'>Loading...</td></tr>";
-
             Papa.parse(CSV_TASK2_URL, {
                 download: true, header: false, skipEmptyLines: true,
                 complete: function(results) {
@@ -190,10 +185,7 @@
                     let filtered = rows.filter(row => {
                         let mDate = (fDate === "") || (row[0] === formatSheetDate(fDate));
                         let mWh = (fWh === "All") || (row[1] === fWh);
-                        
-                        // Nếu không tích team nào thì coi như lấy hết, nếu tích thì lọc theo danh sách
                         let mTeam = (selectedTeams.length === 0) || (selectedTeams.includes(row[3]));
-                        
                         return mDate && mWh && mTeam;
                     });
                     let total = 0;
@@ -211,22 +203,42 @@
             cachedData = await res.json();
             filterLocalDB();
         }
+
         function filterLocalDB() {
-            const d = document.getElementById('dbDate').value;
-            renderTable('masterBody', cachedData.filter(r => r.date === d));
-            renderTable('syncBody', cachedData.filter(r => r.date === new Date().toISOString().split('T')[0]));
+            const from = document.getElementById('dbDateFrom').value;
+            const to = document.getElementById('dbDateTo').value;
+            const today = new Date().toISOString().split('T')[0];
+
+            // Lọc dữ liệu trong khoảng ngày cho Task 3
+            const rangeData = cachedData.filter(r => {
+                return (!from || r.date >= from) && (!to || r.date <= to);
+            });
+
+            renderTable('masterBody', rangeData);
+            // Task 1 chỉ hiện của ngày hôm nay
+            renderTable('syncBody', cachedData.filter(r => r.date === today));
         }
+
         function renderTable(id, data) {
             document.getElementById(id).innerHTML = data.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`).reverse().join('');
         }
-        function resetDB() { document.getElementById('dbDate').value = new Date().toISOString().split('T')[0]; filterLocalDB(); }
+
+        function resetDB() { 
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dbDateFrom').value = today;
+            document.getElementById('dbDateTo').value = today;
+            filterLocalDB(); 
+        }
+
         function downloadCSV() {
-            const d = document.getElementById('dbDate').value;
-            const data = cachedData.filter(r => r.date === d);
+            const from = document.getElementById('dbDateFrom').value;
+            const to = document.getElementById('dbDateTo').value;
+            const data = cachedData.filter(r => (!from || r.date >= from) && (!to || r.date <= to));
             let csv = "DATE,TIME,WH,TEAM,VENDOR,WFM_ID,USER_ID,NAME\n" + data.map(r => `${r.date},${r.time},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},${r.name}`).join("\n");
             const link = document.createElement("a"); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = `BPO_Data_${d}.csv`; link.click();
+            link.download = `BPO_Range_${from}_to_${to}.csv`; link.click();
         }
+
         function formatSheetDate(s) { if(!s) return ""; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
         function switchTab(t, el) {
             document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
