@@ -106,13 +106,12 @@
     </div>
 
     <script>
-        // Mày dán link CSV tab Vendor Commit vào đây
-        const CSV_COMMIT_URL = 'LINK_CSV_TAB_VENDOR_COMMIT_CUA_MAY';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcHl4jkyNXnJN2FeAGiuNS5q0KdV-mghArP3uszwzB1giNolHpfB6AKzQNbQki_4F1/exec';
+        const CSV_TASK2_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
         let dataPT = [];
-        let cachedData = []; // Cache cho Task 1 & 3
+        let cachedData = [];
         let currentPending = null;
 
         window.onload = () => {
@@ -122,7 +121,7 @@
             fillTime(); preloadData(); loadMasterDB();
         };
 
-        // --- HÀM TASK 1 ---
+        // --- TASK 1 ---
         function fillTime() {
             const sel = document.getElementById('time');
             for(let i=0; i<48; i++) {
@@ -146,14 +145,17 @@
         async function handleConfirm() {
             if(!currentPending) return alert("Quét mã trước!");
             const realDate = new Date().toISOString().split('T')[0];
+            const idQuet = currentPending.wfmId.toString().trim().toUpperCase();
+            const isExist = cachedData.some(r => r.date === realDate && r.wfmId.toString().trim().toUpperCase() === idQuet);
+            if (isExist) { alert("Mã WFM đã nhập"); return; }
             const dataToSave = { ...currentPending, date: realDate };
             document.getElementById('resStatus').innerText = "SAVING...";
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(dataToSave) });
-            alert("Đã lưu!"); document.getElementById('wfmInput').value = ""; currentPending = null;
+            alert("Lưu thành công!"); document.getElementById('wfmInput').value = ""; currentPending = null;
             document.getElementById('resStatus').innerText = "READY"; loadMasterDB();
         }
 
-        // --- HÀM TASK 2 (LỌC KHỚP DÒNG) ---
+        // --- TASK 2 ---
         function searchRequest() {
             const fDate = document.getElementById('reqDate').value;
             const fWh = document.getElementById('reqWh').value;
@@ -161,26 +163,27 @@
             const tbody = document.getElementById('reqBody');
             tbody.innerHTML = "<tr><td colspan='9' style='text-align:center'>Loading...</td></tr>";
 
-            Papa.parse(CSV_COMMIT_URL, {
-                download: true, header: true, skipEmptyLines: true,
+            Papa.parse(CSV_TASK2_URL, {
+                download: true, header: false, skipEmptyLines: true,
                 complete: function(results) {
-                    let filtered = results.data.filter(row => {
-                        let mDate = row['Date'] === formatSheetDate(fDate);
-                        let mWh = (fWh === "All") || (row['Station'] === fWh);
-                        let mTeam = (fTeam === "All") || (row['Team'] === fTeam);
+                    const rows = results.data.slice(1);
+                    let filtered = rows.filter(row => {
+                        let mDate = (fDate === "") || (row[0] === formatSheetDate(fDate));
+                        let mWh = (fWh === "All") || (row[1] === fWh);
+                        let mTeam = (fTeam === "All") || (row[3] === fTeam);
                         return mDate && mWh && mTeam;
                     });
                     let total = 0;
                     tbody.innerHTML = filtered.map(r => {
-                        let b = parseInt(r['WFM Booking']) || 0; total += b;
-                        return `<tr><td>${r['Date']}</td><td>${r['Station']}</td><td>${r['Vendors']}</td><td>${r['Team']}</td><td>${r['Task']}</td><td>${r['Thời gian bắt đầu']}</td><td>${r['Thời gian Kết thúc']}</td><td>${r['Loại CTV']}</td><td>${b}</td></tr>`;
+                        let b = parseInt(r[9]) || 0; total += b;
+                        return `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[8]}</td><td>${b}</td></tr>`;
                     }).join('');
                     document.getElementById('totalBookingCount').innerText = `TOTAL: ${total} Booking`;
                 }
             });
         }
 
-        // --- HÀM TASK 3 & TIỆN ÍCH ---
+        // --- TASK 3 ---
         async function loadMasterDB() {
             const res = await fetch(SCRIPT_URL);
             cachedData = await res.json();
@@ -202,7 +205,7 @@
             const link = document.createElement("a"); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
             link.download = `BPO_Data_${d}.csv`; link.click();
         }
-        function formatSheetDate(s) { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
+        function formatSheetDate(s) { if(!s) return ""; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
         function switchTab(t, el) {
             document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
             document.getElementById(t).classList.add('active');
