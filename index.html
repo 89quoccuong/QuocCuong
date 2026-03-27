@@ -2,13 +2,13 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - FIXED RANGE</title>
+    <title>BPO SYSTEM - FINAL FIX</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; --danger: #ff5252; --success: #2ecc71; }
+        :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; --danger: #ff5252; --success: #2ecc71; --orange: #f35631; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
         .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); margin: 5px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; font-size: 14px; }
@@ -21,7 +21,9 @@
         .card-title { font-weight: bold; color: #1b2559; border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 20px; text-transform: uppercase; font-size: 14px; }
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
-        .btn-confirm, .btn-search { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        /* Nút Search màu cam theo hình mày gửi */
+        .btn-search-range { background: var(--orange); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; margin-bottom: 10px; font-size: 13px; }
         .table-container { background: white; border-radius: 20px; padding: 0; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
@@ -88,7 +90,7 @@
                             <label class="team-option"><input type="checkbox" value="HSE"> HSE</label>
                         </div>
                     </div>
-                    <button class="btn-search" onclick="searchRequest()" style="padding: 12px 30px;">SEARCH</button>
+                    <button class="btn-confirm" onclick="searchRequest()" style="padding: 12px 30px;">SEARCH</button>
                 </div>
             </div>
             <div class="card">
@@ -112,10 +114,10 @@
                 <div class="card-title">BPO MASTER DATABASE</div>
                 <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px;">
                     <div style="flex: 1; max-width: 400px;">
-                        <label>CHỌN KHOẢNG NGÀY (CLICK CHỌN TỪ NGÀY... ĐẾN NGÀY...)</label>
+                        <label>CHỌN KHOẢNG NGÀY</label>
                         <input type="text" id="dbDateRange" placeholder="Chọn khoảng ngày...">
                     </div>
-                    <button onclick="resetDB()" style="background: #e0e5f2; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; color: #1b2559;">RESET</button>
+                    <button class="btn-search-range" onclick="filterLocalDB()">Search</button>
                     <button onclick="downloadCSV()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer;">DOWNLOAD DATA</button>
                 </div>
                 <div class="table-container"><table><thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>MÃ WFM</th><th>USER WFM ID</th><th>NAME</th></tr></thead><tbody id="masterBody"></tbody></table></div>
@@ -128,23 +130,18 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcHl4jkyNXnJN2FeAGiuNS5q0KdV-mghArP3uszwzB1giNolHpfB6AKzQNbQki_4F1/exec';
         const CSV_TASK2_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
-        let dataPT = [];
         let cachedData = [];
         let currentPending = null;
-        let datePicker; // Instance của Flatpickr
+        let datePicker;
 
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('reqDate').value = today;
             
-            // Khởi tạo Flatpickr (Chọn được khoảng ngày trong 1 ô)
             datePicker = flatpickr("#dbDateRange", {
                 mode: "range",
                 dateFormat: "Y-m-d",
-                defaultDate: [today, today],
-                onChange: function(selectedDates) {
-                    if (selectedDates.length === 2) { filterLocalDB(); }
-                }
+                defaultDate: [today, today]
             });
 
             fillTime(); preloadData(); loadMasterDB();
@@ -176,9 +173,6 @@
         async function handleConfirm() {
             if(!currentPending) return alert("Quét mã trước!");
             const realDate = new Date().toISOString().split('T')[0];
-            const idQuet = currentPending.wfmId.toString().trim().toUpperCase();
-            const isExist = cachedData.some(r => r.date === realDate && r.wfmId.toString().trim().toUpperCase() === idQuet);
-            if (isExist) { alert("Mã WFM đã nhập"); return; }
             const dataToSave = { ...currentPending, date: realDate };
             document.getElementById('resStatus').innerText = "SAVING...";
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(dataToSave) });
@@ -220,33 +214,56 @@
 
         function filterLocalDB() {
             const selected = datePicker.selectedDates;
-            if (selected.length < 2) return; // Chỉ lọc khi chọn xong 2 ngày
+            if (selected.length < 2) return;
             const from = selected[0].toISOString().split('T')[0];
             const to = selected[1].toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
-            const rangeData = cachedData.filter(r => r.date >= from && r.date <= to);
+
+            const rangeData = cachedData.filter(r => {
+                const rowDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
+                return rowDate >= from && rowDate <= to;
+            });
+
             renderTable('masterBody', rangeData);
-            renderTable('syncBody', cachedData.filter(r => r.date === today));
+            renderTable('syncBody', cachedData.filter(r => (r.date.includes('T') ? r.date.split('T')[0] : r.date) === today));
         }
 
+        // Sửa lỗi hiển thị Sat D ở cột Time
         function renderTable(id, data) {
-            document.getElementById(id).innerHTML = data.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`).reverse().join('');
+            document.getElementById(id).innerHTML = data.map(r => {
+                let displayTime = r.time;
+                if (displayTime && displayTime.includes('T')) {
+                    const dateObj = new Date(displayTime);
+                    displayTime = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+                }
+                return `<tr><td>${r.date.split('T')[0]}</td><td>${displayTime}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`;
+            }).reverse().join('');
         }
 
-        function resetDB() { 
-            const today = new Date().toISOString().split('T')[0];
-            datePicker.setDate([today, today]); 
-            filterLocalDB(); 
-        }
-
+        // Fix lỗi tải data không có dữ liệu
         function downloadCSV() {
             const selected = datePicker.selectedDates;
             if (selected.length < 2) return alert("Hãy chọn khoảng ngày trên lịch!");
             const from = selected[0].toISOString().split('T')[0], to = selected[1].toISOString().split('T')[0];
-            const data = cachedData.filter(r => r.date >= from && r.date <= to);
-            let csv = "DATE,TIME,WH,TEAM,VENDOR,WFM_ID,USER_ID,NAME\n" + data.map(r => `${r.date},${r.time},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},${r.name}`).join("\n");
-            const link = document.createElement("a"); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = `BPO_Data_${from}_to_${to}.csv`; link.click();
+            const data = cachedData.filter(r => {
+                const rowDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
+                return rowDate >= from && rowDate <= to;
+            });
+            if(data.length === 0) return alert("Không có dữ liệu trong khoảng này để tải!");
+            
+            let csv = "DATE,TIME,WH,TEAM,VENDOR,WFM_ID,USER_ID,NAME\n" + data.map(r => {
+                let dTime = r.time;
+                if (dTime && dTime.includes('T')) {
+                    const dObj = new Date(dTime);
+                    dTime = dObj.getHours().toString().padStart(2, '0') + ':' + dObj.getMinutes().toString().padStart(2, '0');
+                }
+                return `${r.date.split('T')[0]},${dTime},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},${r.name}`;
+            }).join("\n");
+            
+            const link = document.createElement("a");
+            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+            link.download = `BPO_Data_${from}_to_${to}.csv`;
+            link.click();
         }
 
         function formatSheetDate(s) { if(!s) return ""; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
