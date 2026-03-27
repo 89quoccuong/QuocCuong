@@ -73,4 +73,104 @@
             <div class="card-title">FILTER DATA REQUEST</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
                 <div><label>Date</label><input type="date" id="reqDate"></div>
-                <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select
+                <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
+                <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
+                <button class="btn-search" onclick="loadRequestData()">SEARCH</button>
+            </div>
+        </div>
+        <div class="card" style="padding:0;">
+            <table>
+                <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>WFM ID</th><th>User ID</th></tr></thead>
+                <tbody id="reqBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="database" class="main-content">
+        <div class="card">
+            <div class="card-title">BPO MASTER DATABASE</div>
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 15px; align-items: flex-end;">
+                <div><label>Date Filter</label><input type="date" id="dbDate"></div>
+                <button class="btn-search" onclick="loadSharedDB()">REFRESH</button>
+                <button class="btn-download" onclick="downloadDB()"><i class="fas fa-download"></i> DOWNLOAD CSV</button>
+            </div>
+        </div>
+        <div class="card" style="padding:0;">
+            <table>
+                <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>USER ID</th><th>FULL NAME</th></tr></thead>
+                <tbody id="masterBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7L87IUMGmtAW-_QERDUh88oND7P60Uzmk0cAbLzEFFwbX5ETBw0MzTSixLttsxaxh/exec';
+        const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
+        const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
+        
+        let dataPT = [], dataCommit = [], masterData = [], currentPending = null;
+
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inputDate').value = today;
+            document.getElementById('reqDate').value = today;
+            document.getElementById('dbDate').value = today;
+            fillTime(); preloadData(); loadSharedDB();
+        };
+
+        function fillTime() {
+            const sel = document.getElementById('time');
+            for(let i=0; i<48; i++) {
+                let h = Math.floor(i/2).toString().padStart(2,'0'), m = i%2==0?'00':'30';
+                sel.add(new Option(`${h}:${m}`, `${h}:${m}`));
+            }
+        }
+
+        async function preloadData() {
+            try {
+                const [r1, r2] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
+                const t1 = await r1.text(), t2 = await r2.text();
+                dataPT = t1.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+                dataCommit = t2.split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+            } catch(e) { console.error("Lỗi preload CSV"); }
+        }
+
+        function checkInfo() {
+            const id = document.getElementById('wfmInput').value.trim().toUpperCase();
+            const found = dataPT.find(r => r[8] && r[8].toUpperCase() === id);
+            if(found) {
+                currentPending = {
+                    date: document.getElementById('inputDate').value,
+                    time: document.getElementById('time').value,
+                    wh: document.getElementById('wh').value,
+                    team: document.getElementById('team').value,
+                    vendor: found[1],
+                    wfmId: found[8],
+                    userId: found[9] || "N/A", // Cột J
+                    name: found[3],           // Cột D
+                    email: found[10]
+                };
+                document.getElementById('resName').innerText = currentPending.name;
+                document.getElementById('resVendor').innerText = currentPending.vendor;
+                document.getElementById('resID').innerText = currentPending.wfmId;
+                document.getElementById('resUserId').innerText = currentPending.userId;
+                document.getElementById('resEmail').innerText = currentPending.email;
+                document.getElementById('resStatus').innerText = "VUI LÒNG BẤM CONFIRM DATA";
+            } else { alert("Không tìm thấy mã WFM!"); }
+        }
+
+        async function handleConfirm() {
+            if(!currentPending) return alert("Nhập mã WFM rồi Enter trước!");
+            document.getElementById('resStatus').innerText = "ĐANG LƯU...";
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(currentPending) });
+            document.getElementById('resStatus').innerText = "ĐÃ LƯU XONG!";
+            document.getElementById('wfmInput').value = "";
+            currentPending = null;
+            await loadSharedDB();
+        }
+
+        async function loadSharedDB() {
+            try {
+                const res = await fetch(SCRIPT_URL);
+                masterData = await res.json();
+                renderLogs();
