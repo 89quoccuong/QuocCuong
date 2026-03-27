@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - FINAL RECOVERY</title>
+    <title>BPO SYSTEM - BACK TO OK VERSION</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --border: #e0e5f2; }
@@ -132,30 +132,29 @@
                 const [r1, r2] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
                 const t1 = await r1.text();
                 const t2 = await r2.text();
-                dataPT = t1.split('\n').map(row => row.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
-                dataCommit = t2.split('\n').map(row => row.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
-                console.log("CSV Data Preloaded");
-            } catch (e) { console.error("Error loading CSV"); }
+                dataPT = t1.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+                dataCommit = t2.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+            } catch (e) { console.error("Data error"); }
         }
 
         function checkInfo() {
             const id = document.getElementById('wfmInput').value.trim().toUpperCase();
             if(!id) return;
-            const found = dataPT.find(r => r.some(c => c.toUpperCase() === id));
+            // Dựa vào ảnh mày gửi: Cột I (Index 8) là mã WFM
+            const found = dataPT.find(r => r[8] && r[8].toUpperCase() === id);
             if(found) {
-                document.getElementById('resName').innerText = found[3] || found[2] || "-";
+                document.getElementById('resName').innerText = found[3] || "-";
                 document.getElementById('resVendor').innerText = found[1] || "-";
                 document.getElementById('resID').innerText = id;
-                document.getElementById('resUserId').innerText = found[9] || found[10] || "-";
+                document.getElementById('resUserId').innerText = found[9] || "-";
                 document.getElementById('resStatus').innerText = "MÃ OK!";
-            } else { alert("Không thấy mã WFM!"); }
+            } else { alert("Không thấy mã WFM: " + id); }
         }
 
         async function handleConfirm() {
             const id = document.getElementById('resID').innerText;
-            if(id === "-") return alert("Vui lòng check mã WFM trước!");
-
-            const payload = new URLSearchParams({
+            if(id === "-") return alert("Hãy Enter mã WFM trước!");
+            const p = new URLSearchParams({
                 date: document.getElementById('inputDate').value,
                 time: document.getElementById('time').value,
                 wh: document.getElementById('wh').value,
@@ -165,14 +164,11 @@
                 userId: document.getElementById('resUserId').innerText,
                 name: document.getElementById('resName').innerText
             });
-
-            document.getElementById('resStatus').innerText = "SENDING...";
-            try {
-                await fetch(`${SCRIPT_URL}?${payload.toString()}`, { method: 'GET', mode: 'no-cors' });
-                document.getElementById('resStatus').innerText = "SENT!";
-                document.getElementById('wfmInput').value = "";
-                setTimeout(loadSharedDB, 2000);
-            } catch (e) { document.getElementById('resStatus').innerText = "ERROR!"; }
+            document.getElementById('resStatus').innerText = "SAVING...";
+            await fetch(`${SCRIPT_URL}?${p.toString()}`, { method: 'GET', mode: 'no-cors' });
+            document.getElementById('resStatus').innerText = "DONE!";
+            document.getElementById('wfmInput').value = "";
+            loadSharedDB();
         }
 
         async function loadSharedDB() {
@@ -184,26 +180,15 @@
                 const html = filtered.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`).join('');
                 document.getElementById('logList').innerHTML = html;
                 document.getElementById('masterBody').innerHTML = html;
-            } catch (e) { console.log("DB rỗng"); }
+            } catch (e) { }
         }
 
         function loadRequestData() {
-            const dVal = document.getElementById('reqDate').value; // yyyy-mm-dd
+            const dVal = document.getElementById('reqDate').value;
             if(!dVal) return;
             const [y, m, d] = dVal.split('-');
-            const searchDate = `${parseInt(d)}/${parseInt(m)}`; // Định dạng d/m để tìm trong Sheet
-
-            const fWh = document.getElementById('reqWh').value;
-            const fTeam = document.getElementById('reqTeam').value;
-
-            const filtered = dataCommit.filter(r => {
-                const cDate = r[0] && r[0].includes(searchDate);
-                const cWh = fWh === "" || (r[1] && r[1].includes(fWh));
-                const cTeam = fTeam === "" || (r[3] && r[3].includes(fTeam));
-                return cDate && cWh && cTeam;
-            });
-
-            // Hiển thị: 0:Date, 1:Station, 2:Vendor, 3:Team, 4:Task, 5:Start, 6:End, 8:Type, 9:Booking, 10:ID (Bỏ cột 7)
+            const sDate = `${parseInt(d)}/${parseInt(m)}`;
+            const filtered = dataCommit.filter(r => r[0] && r[0].includes(sDate));
             document.getElementById('reqBody').innerHTML = filtered.map(r => `
                 <tr>
                     <td>${r[0]||""}</td><td>${r[1]||""}</td><td>${r[2]||""}</td><td>${r[3]||""}</td><td>${r[4]||""}</td>
