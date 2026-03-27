@@ -2,13 +2,13 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - FULL SYNC</title>
+    <title>BPO SYSTEM - TASK 1 CHUẨN</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --text-gray: #a3abc1; --danger: #ff5252; --success: #2ecc71; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; z-index: 100; }
+        .sidebar { width: 260px; background: var(--sidebar); color: white; padding-top: 20px; flex-shrink: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; color: rgba(255,255,255,0.7); margin: 5px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; font-size: 14px; }
         .nav-item.active { background: var(--primary); color: white; }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; }
@@ -20,12 +20,7 @@
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; margin-bottom: 10px; font-size: 13px; }
-        .table-container { background: white; border-radius: 20px; padding: 0; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th { text-align: left; padding: 15px 12px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
-        td { padding: 12px; border-bottom: 1px solid #f8fafc; font-size: 12px; color: #1b2559; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -41,16 +36,17 @@
                 <div class="card">
                     <div class="card-title">INPUT WFM ID</div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                        <div style="grid-column: span 2;"><label>DATE SYNC</label><input type="date" id="inputDate"></div>
+                        <div style="grid-column: span 2;"><label>FILTER DATE (SELECTABLE)</label><input type="date" id="inputDate"></div>
                         <div><label>WH</label><select id="wh"><option>VNDB</option><option>VNDL</option></select></div>
                         <div><label>TEAM</label><select id="team"><option>Inbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
                         <div><label>TIME</label><select id="time"></select></div>
                         <div><label>SHIFT</label><select id="shift"><option>Day</option><option>Night</option></select></div>
                     </div>
-                    <label>SCAN WFM ID</label>
+                    <label>SCAN WFM ID (TRA CỘT I)</label>
                     <input type="text" id="wfmInput" placeholder="Nhập mã WFM rồi Enter..." onkeypress="if(event.key==='Enter') checkInfo()">
-                    <button class="btn-confirm" onclick="handleConfirm()">CONFIRM DATA</button>
+                    <button class="btn-confirm" onclick="handleConfirm()">CONFIRM (REAL-TIME DATE)</button>
                 </div>
+
                 <div class="card">
                     <div class="card-title">INFO DETAILS</div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
@@ -65,153 +61,20 @@
         </div>
 
         <div id="request" class="main-content">
-            <div class="card">
-                <div class="card-title">FILTER DATA REQUEST</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
-                    <div><label>Date</label><input type="date" id="reqDate"></div>
-                    <div><label>Warehouse</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
-                    <div><label>Team</label><select id="reqTeam"><option value="All">All Team</option><option>Inbound</option><option>Inventory</option><option>FD</option><option>OB</option></select></div>
-                    <button class="btn-search" onclick="loadRequestData()">SEARCH</button>
-                </div>
-            </div>
-            <div class="card table-container">
-                <table>
-                    <thead><tr><th>Date</th><th>WH</th><th>Vendor</th><th>Team</th><th>Task</th><th>Booking</th></tr></thead>
-                    <tbody id="reqBody"></tbody>
-                </table>
-            </div>
+            <div class="card"><div class="card-title">TASK 2 - TOTAL VND REQUEST</div></div>
         </div>
-
         <div id="database" class="main-content">
-            <div class="card">
-                <div class="card-title">BPO MASTER DATABASE</div>
-                <div style="display: flex; gap: 15px; align-items: flex-end;">
-                    <div style="width: 200px;"><label>Filter Date</label><input type="date" id="dbDate" onchange="renderMaster()"></div>
-                    <button class="btn-search" onclick="loadSharedDB()">REFRESH DB</button>
-                </div>
-            </div>
-            <div class="card table-container">
-                <table>
-                    <thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>WFM ID</th><th>USER ID</th><th>NAME</th></tr></thead>
-                    <tbody id="masterBody"></tbody>
-                </table>
-            </div>
+            <div class="card"><div class="card-title">TASK 3 - BPO DATABASE</div></div>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcHl4jkyNXnJN2FeAGiuNS5q0KdV-mghArP3uszwzB1giNolHpfB6AKzQNbQki_4F1/exec';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
-        const CSV_COMMIT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
-        
-        let dataPT = [], dataCommit = [], masterData = [], currentPending = null;
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcHl4jkyNXnJN2FeAGiuNS5q0KdV-mghArP3uszwzB1giNolHpfB6AKzQNbQki_4F1/exec';
+
+        let dataPT = [];
+        let currentPending = null;
 
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
-            document.querySelectorAll('input[type="date"]').forEach(i => i.value = today);
-            fillTime(); preloadData(); loadSharedDB();
-        };
-
-        function fillTime() {
-            const sel = document.getElementById('time');
-            for(let i=0; i<48; i++) {
-                let h = Math.floor(i/2).toString().padStart(2,'0'), m = i%2==0?'00':'30';
-                sel.add(new Option(`${h}:${m}`, `${h}:${m}`));
-            }
-        }
-
-        function preloadData() {
-            Papa.parse(CSV_PT_URL, { download: true, skipEmptyLines: true, complete: res => { 
-                dataPT = res.data; 
-                console.log("Task 1 Data Loaded:", dataPT.length, "rows");
-            }});
-            Papa.parse(CSV_COMMIT_URL, { download: true, skipEmptyLines: true, complete: res => { 
-                dataCommit = res.data; 
-                console.log("Task 2 Data Loaded:", dataCommit.length, "rows");
-            }});
-        }
-
-        function checkInfo() {
-            const id = document.getElementById('wfmInput').value.trim().toUpperCase();
-            if(!id) return;
-            // Tra cứu cột I (Index 8)
-            const found = dataPT.find(r => r[8] && r[8].toString().trim().toUpperCase() === id);
-            if(found) {
-                currentPending = {
-                    date: document.getElementById('inputDate').value,
-                    time: document.getElementById('time').value,
-                    wh: document.getElementById('wh').value,
-                    team: document.getElementById('team').value,
-                    vendor: found[1], // Cột B
-                    wfmId: found[8],  // Cột I
-                    userId: found[9] || "N/A", // Cột J
-                    name: found[3]    // Cột D
-                };
-                document.getElementById('resName').innerText = currentPending.name;
-                document.getElementById('resVendor').innerText = currentPending.vendor;
-                document.getElementById('resID').innerText = currentPending.wfmId;
-                document.getElementById('resUserId').innerText = currentPending.userId;
-                document.getElementById('resStatus').innerText = "✅ OK! BẤM CONFIRM";
-            } else { alert("Không tìm thấy WFM ID!"); }
-        }
-
-        async function handleConfirm() {
-            if(!currentPending) return alert("Chưa có data để lưu!");
-            document.getElementById('resStatus').innerText = "SAVING...";
-            // Đẩy data lên App Script
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(currentPending) });
-            alert("Đã lưu thành công!");
-            document.getElementById('wfmInput').value = "";
-            currentPending = null;
-            loadSharedDB();
-        }
-
-        async function loadSharedDB() {
-            try {
-                const res = await fetch(SCRIPT_URL);
-                masterData = await res.json();
-                renderMaster();
-            } catch(e) { console.error("DB Error"); }
-        }
-
-        function renderMaster() {
-            const target = document.getElementById('dbDate').value;
-            const filtered = masterData.filter(r => r.date === target);
-            document.getElementById('masterBody').innerHTML = filtered.map(r => `
-                <tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>
-            `).join('');
-        }
-
-        function loadRequestData() {
-            const dVal = document.getElementById('reqDate').value;
-            const whVal = document.getElementById('reqWh').value;
-            const teamVal = document.getElementById('reqTeam').value;
-            
-            // Convert yyyy-mm-dd sang dd/mm/yyyy
-            const [y, m, d] = dVal.split('-');
-            const dateStr = `${d}/${m}/${y}`;
-            const dateStrShort = `${parseInt(d)}/${parseInt(m)}/${y}`;
-
-            const filtered = dataCommit.filter(r => {
-                const rowDate = r[0] ? r[0].trim() : "";
-                const matchDate = (rowDate === dateStr || rowDate === dateStrShort);
-                const matchWh = whVal === "All" || (r[1] && r[1].includes(whVal));
-                const matchTeam = teamVal === "All" || (r[3] && r[3].includes(teamVal));
-                return matchDate && matchWh && matchTeam;
-            });
-
-            // Cột A:0, B:1, C:2, D:3, E:4, J:9
-            document.getElementById('reqBody').innerHTML = filtered.map(r => `
-                <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[9]}</td></tr>
-            `).join('');
-        }
-
-        function switchTab(t, el) {
-            document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('input
