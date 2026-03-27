@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - FINAL FIX</title>
+    <title>BPO SYSTEM - FIXED</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -22,7 +22,7 @@
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        /* Nút Search màu cam theo hình mày gửi */
+        /* Giữ nguyên màu nút Search cam mày thích */
         .btn-search-range { background: var(--orange); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; margin-bottom: 10px; font-size: 13px; }
         .table-container { background: white; border-radius: 20px; padding: 0; overflow-x: auto; }
@@ -31,7 +31,6 @@
         td { padding: 12px; border-bottom: 1px solid #f8fafc; font-size: 12px; color: #1b2559; font-weight: 600; }
         .multi-team-box { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; border: 1px solid #e0e5f2; padding: 10px; border-radius: 12px; }
         .team-option { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1b2559; cursor: pointer; }
-        .team-option input { width: auto; margin: 0; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -131,6 +130,7 @@
         const CSV_TASK2_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
         let cachedData = [];
+        let dataPT = [];
         let currentPending = null;
         let datePicker;
 
@@ -207,14 +207,17 @@
         }
 
         async function loadMasterDB() {
-            const res = await fetch(SCRIPT_URL);
-            cachedData = await res.json();
-            filterLocalDB();
+            try {
+                const res = await fetch(SCRIPT_URL);
+                cachedData = await res.json();
+                filterLocalDB();
+            } catch(e) { console.error("Lỗi tải Master DB"); }
         }
 
         function filterLocalDB() {
             const selected = datePicker.selectedDates;
-            if (selected.length < 2) return;
+            if (selected.length < 2) return alert("Vui lòng chọn khoảng ngày trên lịch!");
+            
             const from = selected[0].toISOString().split('T')[0];
             const to = selected[1].toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
@@ -228,36 +231,39 @@
             renderTable('syncBody', cachedData.filter(r => (r.date.includes('T') ? r.date.split('T')[0] : r.date) === today));
         }
 
-        // Sửa lỗi hiển thị Sat D ở cột Time
+        // Fix lỗi Sat D và hiển thị trắng bảng
         function renderTable(id, data) {
             document.getElementById(id).innerHTML = data.map(r => {
                 let displayTime = r.time;
                 if (displayTime && displayTime.includes('T')) {
-                    const dateObj = new Date(displayTime);
-                    displayTime = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+                    const dObj = new Date(displayTime);
+                    displayTime = dObj.getHours().toString().padStart(2,'0') + ':' + dObj.getMinutes().toString().padStart(2,'0');
                 }
-                return `<tr><td>${r.date.split('T')[0]}</td><td>${displayTime}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`;
+                const displayDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
+                return `<tr><td>${displayDate}</td><td>${displayTime}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`;
             }).reverse().join('');
         }
 
-        // Fix lỗi tải data không có dữ liệu
         function downloadCSV() {
             const selected = datePicker.selectedDates;
             if (selected.length < 2) return alert("Hãy chọn khoảng ngày trên lịch!");
             const from = selected[0].toISOString().split('T')[0], to = selected[1].toISOString().split('T')[0];
+            
             const data = cachedData.filter(r => {
                 const rowDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
                 return rowDate >= from && rowDate <= to;
             });
-            if(data.length === 0) return alert("Không có dữ liệu trong khoảng này để tải!");
+
+            if(data.length === 0) return alert("Không có dữ liệu trong khoảng này!");
             
             let csv = "DATE,TIME,WH,TEAM,VENDOR,WFM_ID,USER_ID,NAME\n" + data.map(r => {
                 let dTime = r.time;
                 if (dTime && dTime.includes('T')) {
                     const dObj = new Date(dTime);
-                    dTime = dObj.getHours().toString().padStart(2, '0') + ':' + dObj.getMinutes().toString().padStart(2, '0');
+                    dTime = dObj.getHours().toString().padStart(2,'0') + ':' + dObj.getMinutes().toString().padStart(2,'0');
                 }
-                return `${r.date.split('T')[0]},${dTime},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},${r.name}`;
+                const dDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
+                return `${dDate},${dTime},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},${r.name}`;
             }).join("\n");
             
             const link = document.createElement("a");
