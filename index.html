@@ -2,7 +2,9 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - DATE RANGE FIXED</title>
+    <title>BPO SYSTEM - FIXED RANGE</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -108,9 +110,11 @@
         <div id="database" class="main-content">
             <div class="card">
                 <div class="card-title">BPO MASTER DATABASE</div>
-                <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap;">
-                    <div><label>Từ Ngày</label><input type="date" id="dbDateFrom" style="width: 160px;" onchange="filterLocalDB()"></div>
-                    <div><label>Đến Ngày</label><input type="date" id="dbDateTo" style="width: 160px;" onchange="filterLocalDB()"></div>
+                <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px;">
+                    <div style="flex: 1; max-width: 400px;">
+                        <label>CHỌN KHOẢNG NGÀY (CLICK CHỌN TỪ NGÀY... ĐẾN NGÀY...)</label>
+                        <input type="text" id="dbDateRange" placeholder="Chọn khoảng ngày...">
+                    </div>
                     <button onclick="resetDB()" style="background: #e0e5f2; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; color: #1b2559;">RESET</button>
                     <button onclick="downloadCSV()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer;">DOWNLOAD DATA</button>
                 </div>
@@ -127,12 +131,22 @@
         let dataPT = [];
         let cachedData = [];
         let currentPending = null;
+        let datePicker; // Instance của Flatpickr
 
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dbDateFrom').value = today;
-            document.getElementById('dbDateTo').value = today;
             document.getElementById('reqDate').value = today;
+            
+            // Khởi tạo Flatpickr (Chọn được khoảng ngày trong 1 ô)
+            datePicker = flatpickr("#dbDateRange", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                defaultDate: [today, today],
+                onChange: function(selectedDates) {
+                    if (selectedDates.length === 2) { filterLocalDB(); }
+                }
+            });
+
             fillTime(); preloadData(); loadMasterDB();
         };
 
@@ -205,17 +219,13 @@
         }
 
         function filterLocalDB() {
-            const from = document.getElementById('dbDateFrom').value;
-            const to = document.getElementById('dbDateTo').value;
+            const selected = datePicker.selectedDates;
+            if (selected.length < 2) return; // Chỉ lọc khi chọn xong 2 ngày
+            const from = selected[0].toISOString().split('T')[0];
+            const to = selected[1].toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
-
-            // Lọc dữ liệu trong khoảng ngày cho Task 3
-            const rangeData = cachedData.filter(r => {
-                return (!from || r.date >= from) && (!to || r.date <= to);
-            });
-
+            const rangeData = cachedData.filter(r => r.date >= from && r.date <= to);
             renderTable('masterBody', rangeData);
-            // Task 1 chỉ hiện của ngày hôm nay
             renderTable('syncBody', cachedData.filter(r => r.date === today));
         }
 
@@ -225,18 +235,18 @@
 
         function resetDB() { 
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dbDateFrom').value = today;
-            document.getElementById('dbDateTo').value = today;
+            datePicker.setDate([today, today]); 
             filterLocalDB(); 
         }
 
         function downloadCSV() {
-            const from = document.getElementById('dbDateFrom').value;
-            const to = document.getElementById('dbDateTo').value;
-            const data = cachedData.filter(r => (!from || r.date >= from) && (!to || r.date <= to));
+            const selected = datePicker.selectedDates;
+            if (selected.length < 2) return alert("Hãy chọn khoảng ngày trên lịch!");
+            const from = selected[0].toISOString().split('T')[0], to = selected[1].toISOString().split('T')[0];
+            const data = cachedData.filter(r => r.date >= from && r.date <= to);
             let csv = "DATE,TIME,WH,TEAM,VENDOR,WFM_ID,USER_ID,NAME\n" + data.map(r => `${r.date},${r.time},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},${r.name}`).join("\n");
             const link = document.createElement("a"); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = `BPO_Range_${from}_to_${to}.csv`; link.click();
+            link.download = `BPO_Data_${from}_to_${to}.csv`; link.click();
         }
 
         function formatSheetDate(s) { if(!s) return ""; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
