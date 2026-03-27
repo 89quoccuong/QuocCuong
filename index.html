@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - BACK TO OK VERSION</title>
+    <title>BPO SYSTEM - FULL VERSION</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --sidebar: #13163a; --bg: #f4f7fe; --primary: #4d44ff; --border: #e0e5f2; }
@@ -20,7 +20,7 @@
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
         .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-weight: bold; min-height: 20px; color: #1b2559; margin-bottom: 10px; font-size: 13px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         th { text-align: left; padding: 12px; color: #a3abc1; font-size: 10px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid #f8fafc; font-size: 12px; color: #1b2559; font-weight: 600; }
     </style>
@@ -89,10 +89,10 @@
 
         <div id="database" class="main-content">
             <div class="card">
-                <div class="card-title">MASTER DATABASE</div>
+                <div class="card-title">MASTER DATABASE (TASK 3)</div>
                 <div style="display: flex; gap:15px; align-items: flex-end;">
-                    <div style="flex:1;"><label>Date</label><input type="date" id="dbDate" onchange="loadSharedDB()"></div>
-                    <button class="btn-confirm" onclick="loadSharedDB()" style="width:150px;">REFRESH</button>
+                    <div style="flex:1;"><label>Date Filter</label><input type="date" id="dbDate" onchange="loadSharedDB()"></div>
+                    <button class="btn-confirm" onclick="loadSharedDB()" style="width:150px;">REFRESH DATA</button>
                 </div>
             </div>
             <div class="card" style="padding:0; overflow-x:auto;">
@@ -127,20 +127,28 @@
             }
         }
 
+        function parseCSV(text) {
+            const regex = /("([^"]|"")*"|[^,\n\r]*)(,|\n|\r)/g;
+            const rows = []; let row = []; let match;
+            while ((match = regex.exec(text + ",")) !== null) {
+                let val = match[1].replace(/^"|"$/g, "").replace(/""/g, '"').trim();
+                row.push(val);
+                if (match[3] !== ",") { rows.push(row); row = []; }
+            }
+            return rows;
+        }
+
         async function preloadData() {
             try {
                 const [r1, r2] = await Promise.all([fetch(CSV_PT_URL), fetch(CSV_COMMIT_URL)]);
-                const t1 = await r1.text();
-                const t2 = await r2.text();
-                dataPT = t1.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-                dataCommit = t2.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-            } catch (e) { console.error("Data error"); }
+                dataPT = parseCSV(await r1.text());
+                dataCommit = parseCSV(await r2.text());
+            } catch (e) { console.error("CSV error"); }
         }
 
         function checkInfo() {
             const id = document.getElementById('wfmInput').value.trim().toUpperCase();
             if(!id) return;
-            // Dựa vào ảnh mày gửi: Cột I (Index 8) là mã WFM
             const found = dataPT.find(r => r[8] && r[8].toUpperCase() === id);
             if(found) {
                 document.getElementById('resName').innerText = found[3] || "-";
@@ -148,13 +156,13 @@
                 document.getElementById('resID').innerText = id;
                 document.getElementById('resUserId').innerText = found[9] || "-";
                 document.getElementById('resStatus').innerText = "MÃ OK!";
-            } else { alert("Không thấy mã WFM: " + id); }
+            } else { alert("Không thấy mã WFM!"); }
         }
 
         async function handleConfirm() {
             const id = document.getElementById('resID').innerText;
-            if(id === "-") return alert("Hãy Enter mã WFM trước!");
-            const p = new URLSearchParams({
+            if(id === "-") return alert("Tra mã trước!");
+            const params = new URLSearchParams({
                 date: document.getElementById('inputDate').value,
                 time: document.getElementById('time').value,
                 wh: document.getElementById('wh').value,
@@ -164,8 +172,8 @@
                 userId: document.getElementById('resUserId').innerText,
                 name: document.getElementById('resName').innerText
             });
-            document.getElementById('resStatus').innerText = "SAVING...";
-            await fetch(`${SCRIPT_URL}?${p.toString()}`, { method: 'GET', mode: 'no-cors' });
+            document.getElementById('resStatus').innerText = "SENDING...";
+            await fetch(`${SCRIPT_URL}?${params.toString()}`, { method: 'GET', mode: 'no-cors' });
             document.getElementById('resStatus').innerText = "DONE!";
             document.getElementById('wfmInput').value = "";
             loadSharedDB();
@@ -178,8 +186,8 @@
                 const target = document.getElementById('dbDate').value;
                 const filtered = data.filter(r => r.date === target);
                 const html = filtered.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td></tr>`).join('');
-                document.getElementById('logList').innerHTML = html;
-                document.getElementById('masterBody').innerHTML = html;
+                document.getElementById('logList').innerHTML = html; // Hiện ở Task 1
+                document.getElementById('masterBody').innerHTML = html; // Hiện ở Task 3
             } catch (e) { }
         }
 
