@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - FINAL STABLE</title>
+    <title>BPO SYSTEM - STABLE VERSION</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -22,18 +22,13 @@
         label { display: block; font-size: 11px; font-weight: 800; color: #1b2559; margin-bottom: 8px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e5f2; border-radius: 12px; font-weight: 600; color: #1b2559; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
         .btn-confirm { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; }
-        .btn-search-range { background: var(--orange); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        .btn-download { background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .info-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e0e5f2; font-weight: bold; min-height: 20px; color: #1b2559; margin-bottom: 10px; font-size: 13px; }
         .table-container { background: white; border-radius: 20px; padding: 0; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th { text-align: left; padding: 15px 12px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid #f8fafc; font-size: 12px; color: #1b2559; font-weight: 600; }
-        .btn-delete { color: var(--danger); cursor: pointer; font-size: 16px; border: none; background: none; transition: 0.2s; }
+        .btn-delete { color: var(--danger); cursor: pointer; font-size: 16px; border: none; background: none; }
         .btn-delete:hover { transform: scale(1.3); }
-        .multi-team-box { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; border: 1px solid #e0e5f2; padding: 10px; border-radius: 12px; }
-        .team-option { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1b2559; cursor: pointer; }
-        .team-option input { width: auto; margin: 0; }
     </style>
 </head>
 <body>
@@ -75,75 +70,25 @@
             </div>
         </div>
 
-        <div id="request" class="main-content">
-            <div class="card">
-                <div class="card-title">FILTER DATA REQUEST</div>
-                <div style="display: grid; grid-template-columns: 1fr 1.5fr 3fr auto; gap: 15px; align-items: flex-end;">
-                    <div><label>DATE</label><input type="date" id="reqDate"></div>
-                    <div><label>WAREHOUSE</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
-                    <div>
-                        <label>TEAM (CHỌN NHIỀU)</label>
-                        <div class="multi-team-box" id="reqTeamGroup">
-                            <label class="team-option"><input type="checkbox" value="Inbound"> Inbound</label>
-                            <label class="team-option"><input type="checkbox" value="Inventory"> Inventory</label>
-                            <label class="team-option"><input type="checkbox" value="FD"> FD</label>
-                            <label class="team-option"><input type="checkbox" value="OB"> OB</label>
-                            <label class="team-option"><input type="checkbox" value="Outbound"> Outbound</label>
-                            <label class="team-option"><input type="checkbox" value="HSE"> HSE</label>
-                        </div>
-                    </div>
-                    <button class="btn-confirm" onclick="searchRequest()" style="padding: 12px 30px; width:auto">SEARCH</button>
-                </div>
-            </div>
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div class="card-title" style="margin-bottom: 0;">SUMMARY REPORT</div>
-                    <div id="totalBookingCount" style="font-weight: bold; color: var(--primary); font-size: 16px;">TOTAL: 0 Booking</div>
-                </div>
-                <div class="table-container">
-                    <table id="reqTable">
-                        <thead>
-                            <tr><th>Date</th><th>Station</th><th>Vendors</th><th>Team</th><th>Task</th><th>Start</th><th>End</th><th>Loại CTV</th><th>WFM Booking</th></tr>
-                        </thead>
-                        <tbody id="reqBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
+        <div id="request" class="main-content"></div>
         <div id="database" class="main-content">
-            <div class="card">
+             <div class="card">
                 <div class="card-title">BPO MASTER DATABASE</div>
-                <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px;">
-                    <div style="flex: 1; max-width: 400px;">
-                        <label>CHỌN KHOẢNG NGÀY</label>
-                        <input type="text" id="dbDateRange" placeholder="Chọn khoảng ngày...">
-                    </div>
-                    <button class="btn-search-range" onclick="loadAndFilterDB()">SEARCH</button>
-                    <button class="btn-download" onclick="downloadCSV()">DOWNLOAD DATA</button>
-                </div>
                 <div class="table-container"><table><thead><tr><th>DATE</th><th>TIME</th><th>WH</th><th>TEAM</th><th>VENDOR</th><th>MÃ WFM</th><th>USER WFM ID</th><th>NAME</th><th>ACTION</th></tr></thead><tbody id="masterBody"></tbody></table></div>
             </div>
         </div>
     </div>
 
     <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzD_0i8LKndaGLiGvrzGUmZGNT3R7E4PTj-yUSA8qKD_It0NLz9OABlYAZY0pHzofFW/exec';
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEU7whC7pletbztSGbjHvKKqgzp2PKeDPvYhuUm3XLNgu1vPD3DGChBKvXWe5_lNQB/exec';
-        const CSV_TASK2_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
         let cachedData = [];
         let dataPT = [];
         let currentPending = null;
-        let datePicker;
-        let filteredDataForDownload = [];
 
         window.onload = () => {
-            const today = new Date().toLocaleDateString('en-CA');
-            document.getElementById('reqDate').value = today;
-            datePicker = flatpickr("#dbDateRange", { mode: "range", dateFormat: "Y-m-d", defaultDate: [today, today] });
             fillTime(); preloadData(); fetchServerData();
-            // Tự động load lại data mỗi 30s để đồng bộ nhiều máy
             setInterval(fetchServerData, 30000);
         };
 
@@ -155,6 +100,84 @@
             }
         }
 
-        function preloadData() { Papa.parse(CSV_PT_URL, { download: true, skipEmptyLines: true, complete: res => { dataPT = res.data; } }); }
+        function preloadData() { Papa.parse(CSV_PT_URL, { download: true, complete: res => { dataPT = res.data; } }); }
 
-        async function fetchServerData()
+        async function fetchServerData() {
+            try {
+                const res = await fetch(SCRIPT_URL);
+                cachedData = await res.json();
+                renderTodayTable();
+            } catch(e) { console.log("Error sync"); }
+        }
+
+        function formatTimeClean(t) {
+            if (!t) return "00:00";
+            if (typeof t === 'string' && t.includes(':') && !t.includes('T')) return t;
+            const d = new Date(t);
+            return isNaN(d.getTime()) ? "00:00" : d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+        }
+
+        function checkInfo() {
+            const id = document.getElementById('wfmInput').value.trim().toUpperCase();
+            const found = dataPT.find(row => row[8] && row[8].toString().trim().toUpperCase() === id);
+            if(found) {
+                currentPending = { vendor: found[1], wfmId: found[8], userId: found[9] || "N/A", name: found[3], wh: document.getElementById('wh').value, team: document.getElementById('team').value, time: document.getElementById('time').value };
+                document.getElementById('resVendor').innerText = currentPending.vendor;
+                document.getElementById('resName').innerText = currentPending.name;
+                document.getElementById('resID').innerText = currentPending.wfmId;
+                document.getElementById('resUserId').innerText = currentPending.userId;
+                document.getElementById('resStatus').innerText = "✅ OK";
+            }
+        }
+
+        async function handleConfirm() {
+            if(!currentPending) return;
+            const today = new Date().toLocaleDateString('en-CA');
+            
+            // REALTIME: Đẩy vào bảng luôn không cần chờ
+            cachedData.push({...currentPending, date: today, rowId: "temp"});
+            renderTodayTable();
+
+            document.getElementById('resStatus').innerText = "SAVING...";
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({...currentPending, date: today}) });
+            
+            document.getElementById('wfmInput').value = ""; currentPending = null;
+            document.getElementById('resStatus').innerText = "READY";
+            fetchServerData();
+        }
+
+        async function deleteRow(rowId) {
+            if(!confirm("Xóa dòng này?")) return;
+            // REALTIME: Xóa khỏi màn hình luôn
+            cachedData = cachedData.filter(r => r.rowId != rowId);
+            renderTodayTable();
+
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ method: 'DELETE', rowId: rowId }) });
+            fetchServerData();
+        }
+
+        function renderTodayTable() {
+            const today = new Date().toLocaleDateString('en-CA');
+            const todayData = cachedData.filter(r => (r.date.includes('T') ? r.date.split('T')[0] : r.date) === today);
+            renderTable('syncBody', todayData);
+        }
+
+        function renderTable(id, data) {
+            const tbody = document.getElementById(id);
+            if(!tbody) return;
+            tbody.innerHTML = data.map(r => {
+                const dDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
+                return `<tr><td>${dDate}</td><td>${formatTimeClean(r.time)}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td><td style="text-align:center"><button class="btn-delete" onclick="deleteRow(${r.rowId})"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+            }).reverse().join('');
+        }
+
+        function switchTab(t, el) {
+            document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(t).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            if(t === 'database') renderTable('masterBody', cachedData);
+        }
+    </script>
+</body>
+</html>
