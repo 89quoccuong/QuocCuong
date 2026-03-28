@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>BPO SYSTEM - STABLE VERSION</title>
+    <title>BPO SYSTEM - FINAL STABLE</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -30,7 +30,7 @@
         th { text-align: left; padding: 15px 12px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid #f8fafc; font-size: 12px; color: #1b2559; font-weight: 600; }
         .btn-delete { color: var(--danger); cursor: pointer; font-size: 16px; border: none; background: none; transition: 0.2s; }
-        .btn-delete:hover { transform: scale(1.2); }
+        .btn-delete:hover { transform: scale(1.3); }
         .multi-team-box { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; border: 1px solid #e0e5f2; padding: 10px; border-radius: 12px; }
         .team-option { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1b2559; cursor: pointer; }
         .team-option input { width: auto; margin: 0; }
@@ -82,7 +82,7 @@
                     <div><label>DATE</label><input type="date" id="reqDate"></div>
                     <div><label>WAREHOUSE</label><select id="reqWh"><option value="All">All WH</option><option>VNDB</option><option>VNDL</option></select></div>
                     <div>
-                        <label>TEAM</label>
+                        <label>TEAM (CHỌN NHIỀU)</label>
                         <div class="multi-team-box" id="reqTeamGroup">
                             <label class="team-option"><input type="checkbox" value="Inbound"> Inbound</label>
                             <label class="team-option"><input type="checkbox" value="Inventory"> Inventory</label>
@@ -97,10 +97,17 @@
             </div>
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div class="card-title">SUMMARY REPORT</div>
-                    <div id="totalBookingCount" style="font-weight: bold; color: var(--primary);">TOTAL: 0 Booking</div>
+                    <div class="card-title" style="margin-bottom: 0;">SUMMARY REPORT</div>
+                    <div id="totalBookingCount" style="font-weight: bold; color: var(--primary); font-size: 16px;">TOTAL: 0 Booking</div>
                 </div>
-                <div class="table-container"><table id="reqTable"><thead><tr><th>Date</th><th>Station</th><th>Vendors</th><th>Team</th><th>Task</th><th>Start</th><th>End</th><th>Loại CTV</th><th>WFM Booking</th></tr></thead><tbody id="reqBody"></tbody></table></div>
+                <div class="table-container">
+                    <table id="reqTable">
+                        <thead>
+                            <tr><th>Date</th><th>Station</th><th>Vendors</th><th>Team</th><th>Task</th><th>Start</th><th>End</th><th>Loại CTV</th><th>WFM Booking</th></tr>
+                        </thead>
+                        <tbody id="reqBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -108,7 +115,10 @@
             <div class="card">
                 <div class="card-title">BPO MASTER DATABASE</div>
                 <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px;">
-                    <div style="flex: 1; max-width: 400px;"><label>CHỌN KHOẢNG NGÀY</label><input type="text" id="dbDateRange" placeholder="Chọn khoảng ngày..."></div>
+                    <div style="flex: 1; max-width: 400px;">
+                        <label>CHỌN KHOẢNG NGÀY</label>
+                        <input type="text" id="dbDateRange" placeholder="Chọn khoảng ngày...">
+                    </div>
                     <button class="btn-search-range" onclick="loadAndFilterDB()">SEARCH</button>
                     <button class="btn-download" onclick="downloadCSV()">DOWNLOAD DATA</button>
                 </div>
@@ -119,7 +129,7 @@
 
     <script>
         const CSV_PT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=0&single=true&output=csv';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4hBFdNFDer3IoKqJzP5hGzVnUoXmIZbO2lxXPhApsv8IWrXmE0FCw6uc8aqZZQ6pk/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEU7whC7pletbztSGbjHvKKqgzp2PKeDPvYhuUm3XLNgu1vPD3DGChBKvXWe5_lNQB/exec';
         const CSV_TASK2_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRBb-hERkDWpd9_BufMG0ZK2idUC5e76qCz7wk96ybqHbrnrG1_xylG3JGWu0Vjor-DKNB1v2uCEG2C/pub?gid=915514461&single=true&output=csv';
 
         let cachedData = [];
@@ -133,7 +143,7 @@
             document.getElementById('reqDate').value = today;
             datePicker = flatpickr("#dbDateRange", { mode: "range", dateFormat: "Y-m-d", defaultDate: [today, today] });
             fillTime(); preloadData(); fetchServerData();
-            // TỰ ĐỘNG ĐỒNG BỘ MỖI 30 GIÂY
+            // Tự động load lại data mỗi 30s để đồng bộ nhiều máy
             setInterval(fetchServerData, 30000);
         };
 
@@ -147,130 +157,4 @@
 
         function preloadData() { Papa.parse(CSV_PT_URL, { download: true, skipEmptyLines: true, complete: res => { dataPT = res.data; } }); }
 
-        async function fetchServerData() {
-            try { 
-                const res = await fetch(SCRIPT_URL); 
-                cachedData = await res.json(); 
-                renderTodayTable(); 
-                if(document.getElementById('database').classList.contains('active')) refreshFilteredView();
-            } catch(e) { console.error("Sync error"); }
-        }
-
-        function formatTimeClean(t) {
-            if (!t) return "00:00";
-            if (typeof t === 'string' && t.includes(':') && !t.includes('T') && !t.includes('Sat')) return t;
-            const d = new Date(t);
-            return isNaN(d.getTime()) ? "00:00" : d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-        }
-
-        function checkInfo() {
-            const id = document.getElementById('wfmInput').value.trim().toUpperCase();
-            const found = dataPT.find(row => row[8] && row[8].toString().trim().toUpperCase() === id);
-            if(found) {
-                currentPending = { vendor: found[1], wfmId: found[8], userId: found[9] || "N/A", name: found[3], wh: document.getElementById('wh').value, team: document.getElementById('team').value, time: document.getElementById('time').value };
-                document.getElementById('resVendor').innerText = currentPending.vendor;
-                document.getElementById('resName').innerText = currentPending.name;
-                document.getElementById('resID').innerText = currentPending.wfmId;
-                document.getElementById('resUserId').innerText = currentPending.userId;
-                document.getElementById('resStatus').innerText = "✅ OK";
-            } else { alert("Mã không tồn tại!"); }
-        }
-
-        async function handleConfirm() {
-            if(!currentPending) return alert("Quét mã trước!");
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            const isDup = cachedData.some(r => {
-                const rDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
-                return rDate === todayStr && r.wfmId.toString().toUpperCase() === currentPending.wfmId.toString().toUpperCase();
-            });
-            if(isDup) return alert("LỖI: Trùng mã trong ngày!");
-            document.getElementById('resStatus').innerText = "SAVING...";
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({...currentPending, date: todayStr}) });
-            document.getElementById('wfmInput').value = ""; currentPending = null;
-            document.getElementById('resStatus').innerText = "READY"; 
-            fetchServerData();
-        }
-
-        async function deleteRow(rowId) {
-            if (!confirm("Xóa dòng này vĩnh viễn?")) return;
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ method: 'DELETE', rowId: rowId }) });
-            fetchServerData();
-        }
-
-        function refreshFilteredView() {
-            const selected = datePicker.selectedDates;
-            if(selected.length < 2) return;
-            const from = selected[0].toLocaleDateString('en-CA');
-            const to = selected[1].toLocaleDateString('en-CA');
-            filteredDataForDownload = cachedData.filter(r => {
-                const rowDateStr = r.date.includes('T') ? r.date.split('T')[0] : r.date;
-                return rowDateStr >= from && rowDateStr <= to;
-            });
-            renderTable('masterBody', filteredDataForDownload);
-        }
-
-        function loadAndFilterDB() { refreshFilteredView(); }
-
-        function downloadCSV() {
-            if(filteredDataForDownload.length === 0) return alert("Search trước!");
-            let csv = "\uFEFFDATE,TIME,WH,TEAM,VENDOR,WFM_ID,USER_ID,NAME\n";
-            filteredDataForDownload.forEach(r => {
-                const dDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
-                csv += `${dDate},${formatTimeClean(r.time)},${r.wh},${r.team},${r.vendor},${r.wfmId},${r.userId},"${r.name}"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `BPO_Export.csv`;
-            link.click();
-        }
-
-        function renderTodayTable() {
-            const today = new Date().toLocaleDateString('en-CA');
-            const todayData = cachedData.filter(r => (r.date.includes('T') ? r.date.split('T')[0] : r.date) === today);
-            renderTable('syncBody', todayData);
-        }
-
-        function renderTable(id, data) {
-            const tbody = document.getElementById(id);
-            tbody.innerHTML = data.map(r => {
-                const dDate = r.date.includes('T') ? r.date.split('T')[0] : r.date;
-                return `<tr><td>${dDate}</td><td>${formatTimeClean(r.time)}</td><td>${r.wh}</td><td>${r.team}</td><td>${r.vendor}</td><td>${r.wfmId}</td><td>${r.userId}</td><td>${r.name}</td><td style="text-align:center"><button class="btn-delete" onclick="deleteRow(${r.rowId})"><i class="fas fa-trash-alt"></i></button></td></tr>`;
-            }).reverse().join('');
-        }
-
-        function searchRequest() {
-            const fDate = document.getElementById('reqDate').value;
-            const fWh = document.getElementById('reqWh').value;
-            const selectedTeams = Array.from(document.querySelectorAll('#reqTeamGroup input:checked')).map(cb => cb.value);
-            const tbody = document.getElementById('reqBody');
-            tbody.innerHTML = "<tr><td colspan='9' style='text-align:center'>Loading...</td></tr>";
-            Papa.parse(CSV_TASK2_URL, {
-                download: true, header: false, skipEmptyLines: true,
-                complete: function(results) {
-                    const rows = results.data.slice(1);
-                    let filtered = rows.filter(row => {
-                        let mDate = (fDate === "") || (row[0] === formatSheetDate(fDate));
-                        let mWh = (fWh === "All") || (row[1] === fWh);
-                        let mTeam = (selectedTeams.length === 0) || (selectedTeams.includes(row[3]));
-                        return mDate && mWh && mTeam;
-                    });
-                    let total = 0;
-                    tbody.innerHTML = filtered.map(r => {
-                        let b = parseInt(r[9]) || 0; total += b;
-                        return `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[8]}</td><td>${b}</td></tr>`;
-                    }).join('');
-                    document.getElementById('totalBookingCount').innerText = `TOTAL: ${total} Booking`;
-                }
-            });
-        }
-        function formatSheetDate(s) { if(!s) return ""; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
-        function switchTab(t, el) {
-            document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-        }
-    </script>
-</body>
-</html>
+        async function fetchServerData()
